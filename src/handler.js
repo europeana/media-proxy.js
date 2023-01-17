@@ -22,7 +22,6 @@ export default async(req, res) => {
   const itemId = `/${req.params.datasetId}/${req.params.localId}`
 
   try {
-    // TODO: use http-proxy-middleware here instead?
     const apiResponse = await axios({
       baseURL: config.europeana.apiUrl,
       method: 'GET',
