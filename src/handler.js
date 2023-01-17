@@ -18,13 +18,13 @@ export default async(req, res) => {
   try {
     // TODO: use http-proxy-middleware here instead?
     const apiResponse = await axios({
-      baseURL: 'https://api.europeana.eu',
+      baseURL: config.europeana.apiUrl,
       method: 'GET',
       params: {
         wskey: config.europeana.apiKey
       },
       timeout: 10000,
-      url: `/record${itemId}.json`
+      url: `${itemId}.json`
     })
     // TODO: handle API errors like 404
     const item = apiResponse.data.object

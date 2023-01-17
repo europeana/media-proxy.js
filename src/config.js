@@ -12,7 +12,8 @@ export default {
     serviceVersion: pkg.version
   },
   europeana: {
-    apiKey: process.env['EUROPEANA_API_KEY']
+    apiKey: process.env['EUROPEANA_API_KEY'],
+    apiUrl: process.env['EUROPEANA_API_URL'] || 'https://api.europeana.eu/record'
   },
   port: process.env.PORT || 3000
 }
