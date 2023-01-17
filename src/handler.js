@@ -2,6 +2,12 @@
  * Test items:
  * - times out /2048005/Athena_Plus_ProvidedCHO_Nationalmuseum__Sweden_83982
  *   not being handled properly yet, for some reason
+ * - from download validation errors:
+ *   /207/https___binadi_navarra_es_registro_oai_binadi_navarra_es_00006093_aggregation
+ *   /9200517/ark__12148_btv1b53098798q
+ *   /08625/FILM00055500c_6
+ *   /761/_nh8fW8R
+ *   /2022709/oai_fototeca_mcu_es_fototeca_WUNDERLICH_WUN_17964
  */
 
 import axios from 'axios'
@@ -45,6 +51,7 @@ export default async(req, res) => {
 
     const webResourceUrl = new URL(webResource)
 
+    // TODO: don't proxy errors
     const proxy = createProxyMiddleware({
       changeOrigin: true,
       followRedirects: true,
