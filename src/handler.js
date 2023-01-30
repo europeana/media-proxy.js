@@ -10,47 +10,33 @@
  *   /2022709/oai_fototeca_mcu_es_fototeca_WUNDERLICH_WUN_17964
  */
 
-import axios from 'axios'
-import md5 from 'md5'
 import { createProxyMiddleware } from 'http-proxy-middleware'
 import config from './config.js'
+import getWebResourceFromRecordAPI from './data-sources/api.js'
+import getWebResourceFromMongo from './data-sources/mongodb.js'
+
+const getWebResource = config.app.dataSource === 'api' ? getWebResourceFromRecordAPI : getWebResourceFromMongo
 
 // TODO: filenames, inc hash & extension
 //       https://www.npmjs.com/package/mime-types
 // TODO: download/inline
-export default async(req, res) => {
+export default async (req, res) => {
   const itemId = `/${req.params.datasetId}/${req.params.localId}`
 
   try {
-    const apiResponse = await axios({
-      baseURL: config.europeana.apiUrl,
-      method: 'GET',
-      params: {
-        wskey: config.europeana.apiKey
-      },
-      timeout: 10000,
-      url: `${itemId}.json`
-    })
-    // TODO: handle API errors like 404
-    const item = apiResponse.data.object
-    const providerAggregation = item.aggregations.find((agg) => agg.about === `/aggregation/provider${itemId}`)
-
-    let webResource
-    if (req.params.webResourceHash) {
-      webResource = providerAggregation.webResources.find((wr) => md5(wr.about) === req.params.webResourceHash).about
-    } else {
-      // TODO: redirect to the URL with the hash? would result in rerequesting record from api...
-      webResource = providerAggregation.edmIsShownBy
-    }
+    const webResource = await getWebResource(itemId, req.params.webResourceHash)
 
     // Handle no isShownBy and no hash, or invalid hash
     if (!webResource) {
       return res.sendStatus(404)
     }
 
+    // TODO: if no hash, redirect to the URL with the hash
+
     const webResourceUrl = new URL(webResource)
 
     // TODO: don't proxy errors
+    // TODO: don't proxy upstream CORS headers
     const proxy = createProxyMiddleware({
       changeOrigin: true,
       followRedirects: true,
@@ -63,5 +49,7 @@ export default async(req, res) => {
     proxy(req, res)
   } catch ({ message }) {
     res.status(502).json({ message })
+  } finally {
+    // mongoClient.close()
   }
 }
