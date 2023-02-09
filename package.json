@@ -1,5 +1,5 @@
 {
-  "name": "@europeana/media-proxy.js",
+  "name": "@europeana/media-proxy",
   "description": "Express app to proxy media from providers.",
   "author": "Richard Doe <richard.doe@europeana.eu>",
   "keywords": [
@@ -18,15 +18,19 @@
     "md5": "^2.3.0",
     "mime-types": "^2.1.35",
     "mongodb": "^4.13.0",
-    "morgan": "^1.10.0",
-    "snappy": "^7.2.2"
+    "morgan": "^1.10.0"
   },
   "devDependencies": {
     "@babel/eslint-parser": "^7.19.1",
     "@babel/plugin-syntax-import-assertions": "^7.20.0",
+    "@rollup/plugin-commonjs": "^24.0.1",
+    "@rollup/plugin-json": "^6.0.0",
+    "@rollup/plugin-node-resolve": "^15.0.1",
+    "@rollup/plugin-terser": "^0.4.0",
     "dotenv": "^16.0.3",
     "eslint": "^8.0.0",
-    "nodemon": "^2.0.20"
+    "nodemon": "^2.0.20",
+    "rollup": "^3.14.0"
   },
   "engines": {
     "node": "^16"
@@ -36,9 +40,10 @@
     "url": "https://github.com/europeana/atc-tel.git"
   },
   "scripts": {
+    "build": "npx rollup -c",
     "lint:fix": "npm run lint -- --fix",
     "lint": "eslint --no-fix --ignore-path .gitignore .",
-    "start": "node src/server.js",
+    "start": "node dist/server.cjs",
     "start:dev": "nodemon -r dotenv/config src/server.js"
   },
   "version": "0.0.1",

@@ -1,12 +1,16 @@
-FROM node:16-alpine AS base
+FROM node:16-alpine AS build
 
 WORKDIR /app
+RUN mkdir dist
 
-COPY package*.json *.md ./
+COPY package*.json rollup* ./
 
-RUN npm ci --omit dev
+RUN npm ci
 
+COPY *.md ./dist/
 COPY src ./src
+
+RUN npm run build
 
 
 FROM gcr.io/distroless/nodejs:16
@@ -19,8 +23,8 @@ EXPOSE ${PORT}
 
 WORKDIR /app
 
-COPY --from=base /app .
+COPY --from=build /app/dist .
 
 USER 1000
 
-CMD ["src/server.js"]
+CMD ["server.cjs"]

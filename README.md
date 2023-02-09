@@ -13,9 +13,10 @@ Express app to proxy media from providers.
 npm ci
 ```
 
-## Run for production (without .env support)
+## Build & run for production (without .env support)
 
 ```
+npm run build
 npm run start
 ```
 
