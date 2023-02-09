@@ -11,11 +11,19 @@
  */
 
 import { createProxyMiddleware } from 'http-proxy-middleware'
-import config from './config.js'
-import getWebResourceFromRecordAPI from './data-sources/api.js'
-import getWebResourceFromMongo from './data-sources/mongodb.js'
+import config from '../config.js'
+import getWebResourceFromRecordAPI from '../sources/api.js'
+import getWebResourceFromMongoDB from '../sources/mongodb.js'
 
-const getWebResource = config.app.dataSource === 'api' ? getWebResourceFromRecordAPI : getWebResourceFromMongo
+const getWebResource = config.app.dataSource === 'api' ? getWebResourceFromRecordAPI : getWebResourceFromMongoDB
+
+const onProxyRes = (proxyRes, req, res) => {
+  for (const header in proxyRes.headers) {
+    if (!['content-length', 'content-type'].includes(header)) {
+      delete proxyRes.headers[header]
+    }
+  }
+}
 
 // TODO: filenames, inc hash & extension
 //       https://www.npmjs.com/package/mime-types
@@ -36,16 +44,17 @@ export default async (req, res) => {
     const webResourceUrl = new URL(webResource)
 
     // TODO: don't proxy errors
-    // TODO: don't proxy upstream CORS headers
     const proxy = createProxyMiddleware({
       changeOrigin: true,
       followRedirects: true,
       logLevel: 'error',
+      onProxyRes,
       pathRewrite: () => `${webResourceUrl.pathname}${webResourceUrl.search}`,
       proxyTimeout: 10000,
       target: webResourceUrl.origin,
       timeout: 10000
     })
+
     proxy(req, res)
   } catch ({ message }) {
     res.status(502).json({ message })

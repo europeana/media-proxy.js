@@ -23,4 +23,4 @@ COPY --from=base /app .
 
 USER 1000
 
-CMD ["src/app.js"]
+CMD ["src/server.js"]
