@@ -24,6 +24,7 @@ export default async (itemId, webResourceHash) => {
   } else {
     webResource = providerAggregation.edmIsShownBy
   }
+  // TODO: fetch and return the rights statement
 
   return webResource
 }

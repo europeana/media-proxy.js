@@ -12,6 +12,8 @@ export default async (itemId, webResourceHash) => {
   const mongoDb = mongoClient.db(config.mongodb.database)
   const mongoCollection = mongoDb.collection('Aggregation')
   const aggregation = await mongoCollection.findOne({ about: `/aggregation/provider${itemId}` })
+  // TODO: fetch and return the rights statement, from the EuropeanaAggregation
+  //       collection, but also looking for WR-specific rights
 
   let webResource
   if (webResourceHash) {
