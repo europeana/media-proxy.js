@@ -14,6 +14,8 @@
  *   /2021012/app_si_A_II_841_3A98
  * - image w/ application/octet-stream content-type:
  *   /2021803/C10002457770
+ * - 404
+ *   /2022709/oai_fototeca_mcu_es_fototeca_LOTY_LOTY_10117/417317fb0211e24cf6db811e08e07823
  */
 
 import { createProxyMiddleware } from 'http-proxy-middleware'
@@ -33,7 +35,7 @@ const headersToProxy = [
   'etag',
   'last-modified',
   'link'
-];
+]
 
 const onProxyRes = (proxyRes, req, res) => {
   for (const header in proxyRes.headers) {
@@ -42,13 +44,18 @@ const onProxyRes = (proxyRes, req, res) => {
     }
   }
 
+  if (proxyRes.statusCode > 399) {
+    res.sendStatus(proxyRes.statusCode)
+    return;
+  }
+
   const contentType = proxyRes.headers['content-type'] || 'application/octet-stream'
 
   if (contentType.split(';')[0] === 'text/html') {
     return res.redirect(302, res.getHeader('x-europeana-web-resource'))
   }
 
-  const basename = `Europeana.eu_${req.params.datasetId}_${req.params.localId}_${req.params.webResourceHash}`
+  const basename = `Europeana.eu-${req.params.datasetId}-${req.params.localId}-${req.params.webResourceHash}`
   const extension = mime.extension(contentType)
   res.setHeader('content-disposition', `attachment; filename="${basename}.${extension}"`)
 }
