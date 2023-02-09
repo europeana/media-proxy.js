@@ -14,8 +14,18 @@
  *   /2021012/app_si_A_II_841_3A98
  * - image w/ application/octet-stream content-type:
  *   /2021803/C10002457770
+ * - 400
+ *   /91622/raa_kmb_16000200017076
+ * - 403
+ *   /794/ark__12148_bc6p070269f
  * - 404
  *   /2022709/oai_fototeca_mcu_es_fototeca_LOTY_LOTY_10117/417317fb0211e24cf6db811e08e07823
+ * - 415
+ *   /2064108/Museu_ProvidedCHO_Vorderasiatisches_Museum__Staatliche_Museen_zu_Berlin_DE_MUS_815718_1981597
+ * - 500
+ *   /2048220/europeana_fashion_AM_020323
+ * - SSL error resulting in JS error, resulting in 500 error (should be 502)
+ *   /536/urn___mint_think_code_io_europeana_cyprus_E_0709
  */
 
 import { createProxyMiddleware } from 'http-proxy-middleware'
@@ -56,7 +66,8 @@ const onProxyRes = (proxyRes, req, res) => {
   }
 
   const basename = `Europeana.eu-${req.params.datasetId}-${req.params.localId}-${req.params.webResourceHash}`
-  const extension = mime.extension(contentType)
+  // TODO: log unknown content type
+  const extension = mime.extension(contentType) || 'bin'
   res.setHeader('content-disposition', `attachment; filename="${basename}.${extension}"`)
 }
 
@@ -93,10 +104,10 @@ export default async (req, res) => {
       timeout: 10000
     })
 
-    await proxy(req, res)
+    proxy(req, res)
   } catch ({ message }) {
-    // TODO: log errors to APM, but send the client something else
+    // TODO: log errors to APM
     console.error(message)
-    res.status(502).json({ message })
+    res.sendStatus(502)
   }
 }
