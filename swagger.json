@@ -1,0 +1,27 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Europeana Media Proxy",
+    "description": "Micro-service to proxy media from providers.",
+    "version": "0.0.1"
+  },
+  "paths": {
+    "/": {
+      "get": {
+        "description": "Health check",
+        "responses": {
+          "200": {
+            "description": "\"OK\" if app is healthy",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
