@@ -1,15 +1,80 @@
+---
 openapi: 3.1.0
 info:
   title: Europeana Media Proxy
-  description: Micro-service to proxy media from providers.
+  summary: Micro-service to proxy media from providers.
   version: 0.0.1
 paths:
   /:
     get:
-      description: Root (health check)
+      summary: Root (health check)
+      operationId: getRootHealthCheck
       responses:
         '200':
           description: OK if app is healthy
+          content:
+            text/plain:
+              schema:
+                type: string
+  /media/{datasetId}/{localId}:
+    parameters:
+    - name: datasetId
+      in: path
+      description: Dataset ID of item
+      required: true
+      schema:
+        type: integer
+    - name: localId
+      in: path
+      description: Local ID of item
+      required: true
+      schema:
+        type: string
+    get:
+      summary: Redirect to proxy media for edm:isShownBy
+      operationId: getRedirectEdmIsShownBy
+      responses:
+        '302':
+          description: Redirect to getProxyWebResource for edm:isShownBy
+          headers:
+            location:
+              description: URL to proxy edm:isShownBy of the item
+              schema:
+                type: string
+        '404':
+          description: Item not found, or has no edm:isShownBy
+          content:
+            text/plain:
+              schema:
+                type: string
+  /media/{datasetId}/{localId}/{webResourceHash}:
+    parameters:
+    - name: datasetId
+      in: path
+      description: Dataset ID of item
+      required: true
+      schema:
+        type: integer
+    - name: localId
+      in: path
+      description: Local ID of item
+      required: true
+      schema:
+        type: string
+    - name: webResourceHash
+      in: path
+      description: MD5 hash of web resource URL
+      required: true
+      schema:
+        type: string
+    get:
+      summary: Proxy media for specific web resource
+      operationId: getProxyWebResource
+      responses:
+        '200':
+          description: Media proxied
+        '404':
+          description: Item not found, or has no such web resource
           content:
             text/plain:
               schema:
