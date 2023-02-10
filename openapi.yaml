@@ -9,7 +9,7 @@ paths:
       description: Root (health check)
       responses:
         '200':
-          description: "OK" if app is healthy
+          description: OK if app is healthy
           content:
             text/plain:
               schema:
