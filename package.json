@@ -30,7 +30,8 @@
     "dotenv": "^16.0.3",
     "eslint": "^8.0.0",
     "nodemon": "^2.0.20",
-    "rollup": "^3.14.0"
+    "rollup": "^3.14.0",
+    "serve": "^14.2.0"
   },
   "engines": {
     "node": "^16"
@@ -40,7 +41,8 @@
     "url": "https://github.com/europeana/atc-tel.git"
   },
   "scripts": {
-    "build": "npx rollup -c",
+    "build": "rollup -c",
+    "docs": "serve -p 4000 docs/api",
     "lint:fix": "npm run lint -- --fix",
     "lint": "eslint --no-fix --ignore-path .gitignore .",
     "start": "node dist/server.cjs",

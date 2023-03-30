@@ -79,3 +79,6 @@ paths:
             text/plain:
               schema:
                 type: string
+servers:
+- url: https://media-proxy-js.test.eanadev.org
+  description: Test server
