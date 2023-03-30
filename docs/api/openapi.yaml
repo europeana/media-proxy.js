@@ -4,6 +4,37 @@ info:
   title: Europeana Media Proxy
   summary: Micro-service to proxy media from providers.
   version: 0.0.1
+components:
+  parameters:
+    datasetId:
+      name: datasetId
+      in: path
+      description: Dataset ID of item
+      required: true
+      schema:
+        type: integer
+      examples:
+        WIERICKERSCHANS-example:
+          summary: WIERICKERSCHANS
+          value: 2048359
+    localId:
+      name: localId
+      in: path
+      description: Local ID of item
+      required: true
+      schema:
+        type: string
+      examples:
+        WIERICKERSCHANS-example:
+          summary: WIERICKERSCHANS
+          value: providedCHO_4_OPG_4_OPG___W16
+    webResourceHash:
+      name: webResourceHash
+      in: path
+      description: MD5 hash of web resource URL
+      required: true
+      schema:
+        type: string
 paths:
   /:
     get:
@@ -18,18 +49,8 @@ paths:
                 type: string
   /media/{datasetId}/{localId}:
     parameters:
-    - name: datasetId
-      in: path
-      description: Dataset ID of item
-      required: true
-      schema:
-        type: integer
-    - name: localId
-      in: path
-      description: Local ID of item
-      required: true
-      schema:
-        type: string
+    - $ref: '#/components/parameters/datasetId'
+    - $ref: '#/components/parameters/localId'
     get:
       summary: Redirect to proxy media for edm:isShownBy
       operationId: getRedirectEdmIsShownBy
@@ -49,24 +70,9 @@ paths:
                 type: string
   /media/{datasetId}/{localId}/{webResourceHash}:
     parameters:
-    - name: datasetId
-      in: path
-      description: Dataset ID of item
-      required: true
-      schema:
-        type: integer
-    - name: localId
-      in: path
-      description: Local ID of item
-      required: true
-      schema:
-        type: string
-    - name: webResourceHash
-      in: path
-      description: MD5 hash of web resource URL
-      required: true
-      schema:
-        type: string
+    - $ref: '#/components/parameters/datasetId'
+    - $ref: '#/components/parameters/localId'
+    - $ref: '#/components/parameters/webResourceHash'
     get:
       summary: Proxy media for specific web resource
       operationId: getProxyWebResource
@@ -82,3 +88,5 @@ paths:
 servers:
 - url: https://media-proxy-js.test.eanadev.org
   description: Test server
+- url: http://localhost:3000
+  description: Local development server

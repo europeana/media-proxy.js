@@ -96,7 +96,7 @@ export default async (req, res) => {
     const proxy = createProxyMiddleware({
       changeOrigin: true,
       followRedirects: true,
-      logLevel: 'error',
+      logLevel: process.NODE_ENV === 'production' ? 'error' : '',
       onProxyRes,
       pathRewrite: () => `${webResourceUrl.pathname}${webResourceUrl.search}`,
       proxyTimeout: 10000,
@@ -105,9 +105,9 @@ export default async (req, res) => {
     })
 
     proxy(req, res)
-  } catch ({ message }) {
+  } catch (error) {
     // TODO: log errors to APM
-    console.error(message)
+    console.error(error)
     res.sendStatus(502)
   }
 }
