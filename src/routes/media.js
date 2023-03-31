@@ -89,7 +89,6 @@ export default async (req, res) => {
 
     const webResourceUrl = new URL(webResource)
 
-    res.setHeader('x-europeana-item', itemId)
     res.setHeader('x-europeana-web-resource', webResource)
 
     // TODO: don't proxy errors
