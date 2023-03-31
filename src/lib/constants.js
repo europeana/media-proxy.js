@@ -1,6 +1,5 @@
 export const CONTENT_TYPES = {
-  APPLICATION_OCTET_STREAM: 'application/octet-stream',
-  TEXT_HTML: 'text/html'
+  APPLICATION_OCTET_STREAM: 'application/octet-stream'
 }
 
 export const HEADERS = {
@@ -12,8 +11,4 @@ export const HEADERS = {
   LAST_MODIFIED: 'last-modified',
   LINK: 'link',
   X_EUROPEANA_WEB_RESOURCE: 'x-europeana-web-resource'
-}
-
-export const SEPARATORS = {
-  HEADER: ';'
 }

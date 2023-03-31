@@ -50,7 +50,7 @@ export default async (req, res) => {
     // TODO: if rights statement prohibits download, 403
 
     // Proxy it to the client
-    webResourceProxy(new URL(webResource))(req, res)
+    webResourceProxy(webResource)(req, res)
   } catch (error) {
     // TODO: log errors to APM
     console.error(error)
