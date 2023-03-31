@@ -59,6 +59,14 @@ components:
           summary: '"Oorlogsvlijt in Harderwijk." item web resource hash'
           description: MD5 hash of URL `https://europeana1914-1918.s3.amazonaws.com/attachments/152075/14524.152075.original.jpg`
           value: 304028f2553becc2bb0e4c0164439ec8
+  responses:
+    403ForbiddenInCopyright:
+      description: Proxying prohibited by copyright
+      content:
+        '*/*':
+          schema:
+            type: string
+            example: Forbidden
 paths:
   /:
     get:
@@ -111,6 +119,8 @@ paths:
               schema:
                 type: string
                 example: Found. Redirecting to /media/2020601/https___1914_1918_europeana_eu_contributions_14524/304028f2553becc2bb0e4c0164439ec8
+        '403':
+          $ref: '#/components/responses/403ForbiddenInCopyright'
         '404':
           description: Item not found, or has no edm:isShownBy
           content:
@@ -192,6 +202,8 @@ paths:
               schema:
                 type: string
                 example: Found. Redirecting to /media/2020601/https___1914_1918_europeana_eu_contributions_14524/304028f2553becc2bb0e4c0164439ec8
+        '403':
+          $ref: '#/components/responses/403ForbiddenInCopyright'
         '404':
           description: Item not found, or has no such web resource
           content:
