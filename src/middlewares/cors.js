@@ -1,6 +1,10 @@
 import cors from 'cors'
 
-const originValidator = (origin, callback) => {
+const authoriseOrigin = (origin, callback) => {
+  if (!origin) {
+    return callback()
+  }
+
   // TODO: move to config
   const permittedHosts = ['europeana.github.io']
   const permittedDomains = ['.eanadev.org', '.europeana.eu']
@@ -21,8 +25,7 @@ const originValidator = (origin, callback) => {
 }
 
 const corsOptions = {
-  // origin: true
-  origin: originValidator
+  origin: authoriseOrigin
 }
 
 export default cors(corsOptions)

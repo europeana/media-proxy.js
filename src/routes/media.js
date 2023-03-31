@@ -28,50 +28,10 @@
  *   /536/urn___mint_think_code_io_europeana_cyprus_E_0709
  */
 
-import { createProxyMiddleware } from 'http-proxy-middleware'
 import md5 from 'md5'
-import mime from 'mime-types'
 
-import config from '../config.js'
-import getWebResourceFromRecordAPI from '../sources/api.js'
-import getWebResourceFromMongoDB from '../sources/mongodb.js'
-
-const getWebResource = config.app.dataSource === 'api' ? getWebResourceFromRecordAPI : getWebResourceFromMongoDB
-
-const headersToProxy = [
-  'accept-ranges',
-  'content-length',
-  'content-type',
-  'etag',
-  'last-modified',
-  'link'
-]
-
-const onProxyRes = (webResource) => (proxyRes, req, res) => {
-  for (const header in proxyRes.headers) {
-    if (!headersToProxy.includes(header)) {
-      delete proxyRes.headers[header]
-    }
-  }
-
-  if (proxyRes.statusCode > 399) {
-    res.sendStatus(proxyRes.statusCode)
-    return
-  }
-
-  const contentType = proxyRes.headers['content-type'] || 'application/octet-stream'
-
-  if (contentType.split(';')[0] === 'text/html') {
-    return res.redirect(302, webResource)
-  }
-
-  res.setHeader('x-europeana-web-resource', webResource)
-
-  const basename = `Europeana.eu-${req.params.datasetId}-${req.params.localId}-${req.params.webResourceHash}`
-  // TODO: log unknown content type
-  const extension = mime.extension(contentType) || 'bin'
-  res.setHeader('content-disposition', `attachment; filename="${basename}.${extension}"`)
-}
+import webResourceProxy from '../middlewares/web-resource-proxy.js'
+import getWebResource from '../sources/index.js'
 
 export default async (req, res) => {
   const itemId = `/${req.params.datasetId}/${req.params.localId}`
@@ -89,21 +49,8 @@ export default async (req, res) => {
 
     // TODO: if rights statement prohibits download, 403
 
-    const webResourceUrl = new URL(webResource)
-
-    // TODO: don't proxy errors
-    const proxy = createProxyMiddleware({
-      changeOrigin: true,
-      followRedirects: true,
-      logLevel: process.NODE_ENV === 'production' ? 'error' : '',
-      onProxyRes: onProxyRes(webResource),
-      pathRewrite: () => `${webResourceUrl.pathname}${webResourceUrl.search}`,
-      proxyTimeout: 10000,
-      target: webResourceUrl.origin,
-      timeout: 10000
-    })
-
-    proxy(req, res)
+    // Proxy it to the client
+    webResourceProxy(new URL(webResource))(req, res)
   } catch (error) {
     // TODO: log errors to APM
     console.error(error)
