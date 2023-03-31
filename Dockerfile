@@ -3,10 +3,11 @@ FROM node:16-alpine AS build
 WORKDIR /app
 RUN mkdir dist
 
-COPY package*.json rollup* ./
+COPY package*.json ./
 
 RUN npm ci
 
+COPY rollup* ./
 COPY *.md ./dist/
 COPY src ./src
 

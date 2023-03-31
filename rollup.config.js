@@ -13,7 +13,9 @@ export default {
   plugins: [
     commonjs(),
     json(),
-    resolve(),
+    resolve({
+      preferBuiltins: true
+    }),
     terser()
   ]
 }
