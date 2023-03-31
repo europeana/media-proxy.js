@@ -1,6 +1,6 @@
 import express from 'express'
 
-import middlewares from './middlewares.js'
+import middlewares from './middlewares/index.js'
 import routes from './routes/index.js'
 
 const app = express()
