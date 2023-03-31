@@ -14,9 +14,9 @@ components:
       schema:
         type: integer
       examples:
-        WIERICKERSCHANS-example:
-          summary: WIERICKERSCHANS
-          value: 2048359
+        oorlogsvlijt-example:
+          summary: '"Oorlogsvlijt in Harderwijk." item dataset ID'
+          value: 2020601
     localId:
       name: localId
       in: path
@@ -25,9 +25,9 @@ components:
       schema:
         type: string
       examples:
-        WIERICKERSCHANS-example:
-          summary: WIERICKERSCHANS
-          value: providedCHO_4_OPG_4_OPG___W16
+        oorlogsvlijt-example:
+          summary: '"Oorlogsvlijt in Harderwijk." item local ID'
+          value: https___1914_1918_europeana_eu_contributions_14524
     webResourceHash:
       name: webResourceHash
       in: path
@@ -35,6 +35,12 @@ components:
       required: true
       schema:
         type: string
+      examples:
+        oorlogsvlijt-example:
+          summary: '"Oorlogsvlijt in Harderwijk." item web resource hash'
+          description: MD5 hash of URL `https://europeana1914-1918.s3.amazonaws.com/attachments/152075/14524.152075.original.jpg`
+          value: 304028f2553becc2bb0e4c0164439ec8
+
 paths:
   /:
     get:
@@ -62,6 +68,10 @@ paths:
               description: URL to proxy edm:isShownBy of the item
               schema:
                 type: string
+          content:
+            '*/*':
+              schema:
+                type: string
         '404':
           description: Item not found, or has no edm:isShownBy
           content:
@@ -73,12 +83,27 @@ paths:
     - $ref: '#/components/parameters/datasetId'
     - $ref: '#/components/parameters/localId'
     - $ref: '#/components/parameters/webResourceHash'
+    - $ref: '#/components/headers/acceptAllHeader'
     get:
       summary: Proxy media for specific web resource
       operationId: getProxyWebResource
       responses:
         '200':
           description: Media proxied
+          headers:
+            x-europeana-web-resource:
+              description: URL of proxied web resource
+              schema:
+                type: string
+                example: https://europeana1914-1918.s3.amazonaws.com/attachments/152075/14524.152075.original.jpg
+          content:
+            '*/*':
+              schema:
+                type: string
+                format: binary
+              examples:
+                oorlogsvlijt:
+                  $ref: '#/components/examples/oorlogsvlijt-example'
         '404':
           description: Item not found, or has no such web resource
           content:
