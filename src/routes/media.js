@@ -42,15 +42,16 @@ export default async (req, res) => {
     if (!webResource) {
       // No isShownBy and no hash, or invalid hash
       return res.sendStatus(404)
+    } else if (webResource.edmRights.includes('/InC/')) {
+      // In copyright, proxying forbidden
+      return res.sendStatus(403)
     } else if (!req.params.webResourceHash) {
-      // 302 redirect to the URL with the hash
-      return res.redirect(302, `/media/${req.params.datasetId}/${req.params.localId}/${md5(webResource)}`)
+      // Redirect to the URL with the hash
+      return res.redirect(302, `/media/${req.params.datasetId}/${req.params.localId}/${md5(webResource.id)}`)
     }
 
-    // TODO: if rights statement prohibits download, 403
-
-    // Proxy it to the client
-    webResourceProxy(webResource)(req, res)
+    // Try proxying it
+    webResourceProxy(webResource.id)(req, res)
   } catch (error) {
     // TODO: log errors to APM
     console.error(error)

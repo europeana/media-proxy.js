@@ -17,14 +17,28 @@ export default async (itemId, webResourceHash) => {
   const item = apiResponse.data.object
   const providerAggregation = item.aggregations.find((agg) => agg.about === `/aggregation/provider${itemId}`)
 
-  let webResource
+  let webResourceId
   if (webResourceHash) {
-    webResource = providerAggregation.webResources
+    webResourceId = providerAggregation.webResources
       .find((wr) => md5(wr.about) === webResourceHash).about
   } else {
-    webResource = providerAggregation.edmIsShownBy
+    webResourceId = providerAggregation.edmIsShownBy
   }
-  // TODO: fetch and return the rights statement
 
-  return webResource
+  if (!webResourceId) {
+    return null
+  }
+
+  let edmRights = providerAggregation.edmRights.def[0]
+
+  const webResource = providerAggregation.webResources
+    .find((wr) => wr.about === webResourceId)
+  if (webResource.webResourceEdmRights) {
+    edmRights = webResource.webResourceEdmRights.def[0]
+  }
+
+  return {
+    edmRights,
+    id: webResourceId
+  }
 }

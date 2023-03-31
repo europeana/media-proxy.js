@@ -10,19 +10,31 @@ export default async (itemId, webResourceHash) => {
   }
 
   const mongoDb = mongoClient.db(config.mongodb.database)
-  const mongoCollection = mongoDb.collection('Aggregation')
-  const aggregation = await mongoCollection.findOne({ about: `/aggregation/provider${itemId}` })
-  // TODO: fetch and return the rights statement, from the EuropeanaAggregation
-  //       collection, but also looking for WR-specific rights
+  const aggregation = await mongoDb.collection('Aggregation')
+    .findOne({ about: `/aggregation/provider${itemId}` })
 
-  let webResource
+  let webResourceId
   if (webResourceHash) {
-    webResource = [aggregation.edmIsShownBy]
-      .concat(aggregation.hasView)
+    webResourceId = [aggregation.edmIsShownBy].concat(aggregation.hasView)
       .find((wr) => md5(wr) === webResourceHash)
   } else {
-    webResource = aggregation.edmIsShownBy
+    webResourceId = aggregation.edmIsShownBy
   }
 
-  return webResource
+  if (!webResourceId) {
+    return null
+  }
+
+  let edmRights = aggregation.edmRights.def[0]
+
+  const webResourceDoc = await mongoDb.collection('WebResource')
+    .findOne({ about: webResourceId })
+  if (webResourceDoc?.webResourceEdmRights) {
+    edmRights = webResourceDoc.webResourceEdmRights.def[0]
+  }
+
+  return {
+    edmRights,
+    id: webResourceId
+  }
 }

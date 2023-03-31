@@ -91,6 +91,8 @@ paths:
         1. Looks for a web resource associated with the item in its
            `edm:isShownBy`property. If no such web resource is found, responds
            with status code 404.
+        1. If the `edm:rights` property applicable to the web resource indicates
+           in copyright, respond with status code 403.
         1. Responds with status code 302 to redirect to the endpoint for proxying
            the media, by appending the MD5 hash of the web resource, i.e.
            `/media/{datasetId}/{localId}/{webResourceHash}`.
@@ -134,6 +136,8 @@ paths:
            `edm:isShownBy` or `edm:hasView` properties, whose URL when MD5-hashed
            matches the path parameter `{webResourceHash}`. If no such web resource
            is found, responds with status code 404.
+        1. If the `edm:rights` property applicable to the web resource indicates
+           in copyright, respond with status code 403.
         1. Starts proxying the web resource from the provider's site to the client.
         1. If the web resource is detected to be an HTML document, stops proxying
            and respond with status code 302 to redirect the client to the web page.
