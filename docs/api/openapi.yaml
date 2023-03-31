@@ -2,8 +2,27 @@
 openapi: 3.1.0
 info:
   title: Europeana Media Proxy
-  summary: Micro-service to proxy media from providers.
+  summary: thing
+  description: |
+    Micro-service for proxying Europeana `edm:isShownBy` and `edm:hasView` web
+    resources from providers' websites.
+
+    ## TODO
+    * docs:
+      * CORS
+  license:
+    name: EUPL-1.2
+    url: https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+  contact:
+    url: https://github.com/europeana/media-proxy.js
   version: 0.0.1
+externalDocs:
+  description: Git repository README
+  url: https://github.com/europeana/media-proxy.js#readme
+tags:
+  - name: media
+    description: Media proxying
+  - name: general
 components:
   parameters:
     datasetId:
@@ -40,57 +59,112 @@ components:
           summary: '"Oorlogsvlijt in Harderwijk." item web resource hash'
           description: MD5 hash of URL `https://europeana1914-1918.s3.amazonaws.com/attachments/152075/14524.152075.original.jpg`
           value: 304028f2553becc2bb0e4c0164439ec8
-
 paths:
   /:
     get:
-      summary: Root (health check)
+      tags:
+        - general
+      summary: Root
+      description: |
+        Returns "OK". May be used as a health check by monitoring systems.
       operationId: getRootHealthCheck
       responses:
         '200':
           description: OK if app is healthy
           content:
-            text/plain:
+            '*/*':
               schema:
                 type: string
+                example: OK
   /media/{datasetId}/{localId}:
     parameters:
-    - $ref: '#/components/parameters/datasetId'
-    - $ref: '#/components/parameters/localId'
+      - $ref: '#/components/parameters/datasetId'
+      - $ref: '#/components/parameters/localId'
     get:
+      tags:
+        - media
       summary: Redirect to proxy media for edm:isShownBy
+      description: |
+        1. Looks in our database for a Europeana item identified by the path
+           parameters `/{datasetId}/{localId}`. If no such item is found, responds
+           with status code 404.
+        1. Looks for a web resource associated with the item in its
+           `edm:isShownBy`property. If no such web resource is found, responds
+           with status code 404.
+        1. Responds with status code 302 to redirect to the endpoint for proxying
+           the media, by appending the MD5 hash of the web resource, i.e.
+           `/media/{datasetId}/{localId}/{webResourceHash}`.
       operationId: getRedirectEdmIsShownBy
       responses:
         '302':
-          description: Redirect to getProxyWebResource for edm:isShownBy
+          description: Redirect
           headers:
             location:
-              description: URL to proxy edm:isShownBy of the item
+              description: Europeana media proxy URL including MD5 hash of edm:isShownBy
               schema:
                 type: string
+                example: /media/2020601/https___1914_1918_europeana_eu_contributions_14524/304028f2553becc2bb0e4c0164439ec8
           content:
             '*/*':
               schema:
                 type: string
+                example: Found. Redirecting to /media/2020601/https___1914_1918_europeana_eu_contributions_14524/304028f2553becc2bb0e4c0164439ec8
         '404':
           description: Item not found, or has no edm:isShownBy
           content:
-            text/plain:
+            '*/*':
               schema:
                 type: string
+                example: Not Found
   /media/{datasetId}/{localId}/{webResourceHash}:
     parameters:
-    - $ref: '#/components/parameters/datasetId'
-    - $ref: '#/components/parameters/localId'
-    - $ref: '#/components/parameters/webResourceHash'
-    - $ref: '#/components/headers/acceptAllHeader'
+      - $ref: '#/components/parameters/datasetId'
+      - $ref: '#/components/parameters/localId'
+      - $ref: '#/components/parameters/webResourceHash'
+      - $ref: '#/components/headers/acceptAllHeader'
     get:
+      tags:
+        - media
       summary: Proxy media for specific web resource
+      description: |
+        1. Looks in our database for a Europeana item identified by the path
+           parameters `/{datasetId}/{localId}`. If no such item is found, responds
+           with status code 404.
+        1. Looks for a web resource associated with the item in either its
+           `edm:isShownBy` or `edm:hasView` properties, whose URL when MD5-hashed
+           matches the path parameter `{webResourceHash}`. If no such web resource
+           is found, responds with status code 404.
+        1. Starts proxying the web resource from the provider's site to the client.
+        1. If the web resource is detected to be an HTML document, stops proxying
+           and respond with status code 302 to redirect the client to the web page.
+        1. If the web resource is any other media type, preserve only these upstream
+           response headers, and remove the rest:
+           * `accept-ranges`
+           * `content-length`
+           * `content-type`
+           * `etag`
+           * `last-modified`
+           * `link`
+        1. If the upstream `content-type` header was omitted, default it to
+           "application/octet-stream".
+        1. Set the filename for the download (in the `content-disposition`
+           response header) based on the format `Europeana.eu-{datasetId}-{localId}-{webResourceHash}.{extension}`.
+           `{extension}` will be determined based on the `content-type` header
+           or default to "bin" if unable to.
+        1. Sets a custom response header `x-europeana-web-resource` containing
+           the upstream URL of the proxied media.
+        1. Respond with 200 status code.
       operationId: getProxyWebResource
       responses:
         '200':
-          description: Media proxied
+          description: Media found and will be proxied
           headers:
+            content-disposition:
+              description: |
+                Filename uses the format Europeana.eu-{datasetId}-{localId}-{webResourceHash}.{extension}
+              schema:
+                type: string
+                example: 'attachment; filename="Europeana.eu-2020601-https___1914_1918_europeana_eu_contributions_14524-304028f2553becc2bb0e4c0164439ec8.jpeg"'
             x-europeana-web-resource:
               description: URL of proxied web resource
               schema:
@@ -101,17 +175,28 @@ paths:
               schema:
                 type: string
                 format: binary
-              examples:
-                oorlogsvlijt:
-                  $ref: '#/components/examples/oorlogsvlijt-example'
+        '302':
+          description: Redirect to provider's site if requested media is HTML
+          headers:
+            location:
+              description: Redirect URL for HTML resource
+              schema:
+                type: string
+                example: https://www.example.org/
+          content:
+            '*/*':
+              schema:
+                type: string
+                example: Found. Redirecting to /media/2020601/https___1914_1918_europeana_eu_contributions_14524/304028f2553becc2bb0e4c0164439ec8
         '404':
           description: Item not found, or has no such web resource
           content:
-            text/plain:
+            '*/*':
               schema:
                 type: string
+                example: Not Found
 servers:
-- url: https://media-proxy-js.test.eanadev.org
-  description: Test server
-- url: http://localhost:3000
-  description: Local development server
+  - url: https://media-proxy-js.test.eanadev.org
+    description: Test server
+  - url: http://localhost:3000
+    description: Local development server

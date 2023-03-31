@@ -47,7 +47,7 @@ const headersToProxy = [
   'link'
 ]
 
-const onProxyRes = (proxyRes, req, res) => {
+const onProxyRes = (webResource) => (proxyRes, req, res) => {
   for (const header in proxyRes.headers) {
     if (!headersToProxy.includes(header)) {
       delete proxyRes.headers[header]
@@ -62,8 +62,10 @@ const onProxyRes = (proxyRes, req, res) => {
   const contentType = proxyRes.headers['content-type'] || 'application/octet-stream'
 
   if (contentType.split(';')[0] === 'text/html') {
-    return res.redirect(302, res.getHeader('x-europeana-web-resource'))
+    return res.redirect(302, webResource)
   }
+
+  res.setHeader('x-europeana-web-resource', webResource)
 
   const basename = `Europeana.eu-${req.params.datasetId}-${req.params.localId}-${req.params.webResourceHash}`
   // TODO: log unknown content type
@@ -89,14 +91,12 @@ export default async (req, res) => {
 
     const webResourceUrl = new URL(webResource)
 
-    res.setHeader('x-europeana-web-resource', webResource)
-
     // TODO: don't proxy errors
     const proxy = createProxyMiddleware({
       changeOrigin: true,
       followRedirects: true,
       logLevel: process.NODE_ENV === 'production' ? 'error' : '',
-      onProxyRes,
+      onProxyRes: onProxyRes(webResource),
       pathRewrite: () => `${webResourceUrl.pathname}${webResourceUrl.search}`,
       proxyTimeout: 10000,
       target: webResourceUrl.origin,
