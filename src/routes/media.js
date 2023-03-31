@@ -56,7 +56,7 @@ const onProxyRes = (webResource) => (proxyRes, req, res) => {
 
   if (proxyRes.statusCode > 399) {
     res.sendStatus(proxyRes.statusCode)
-    return;
+    return
   }
 
   const contentType = proxyRes.headers['content-type'] || 'application/octet-stream'
