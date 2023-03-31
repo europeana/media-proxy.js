@@ -36,6 +36,9 @@ components:
         oorlogsvlijt-example:
           summary: '"Oorlogsvlijt in Harderwijk." item dataset ID'
           value: 2020601
+        maalaus-example:
+          summary: '"maalaus" item (In Copyright) dataset ID'
+          value: 2021009
     localId:
       name: localId
       in: path
@@ -47,6 +50,9 @@ components:
         oorlogsvlijt-example:
           summary: '"Oorlogsvlijt in Harderwijk." item local ID'
           value: https___1914_1918_europeana_eu_contributions_14524
+        maalaus-example:
+          summary: '"maalaus" item (In Copyright) local ID'
+          value: _0CD7C92E0A18088F22111B9C00BD5EF1
     webResourceHash:
       name: webResourceHash
       in: path
@@ -57,8 +63,10 @@ components:
       examples:
         oorlogsvlijt-example:
           summary: '"Oorlogsvlijt in Harderwijk." item web resource hash'
-          description: MD5 hash of URL `https://europeana1914-1918.s3.amazonaws.com/attachments/152075/14524.152075.original.jpg`
           value: 304028f2553becc2bb0e4c0164439ec8
+        maalaus-example:
+          summary: '"maalaus" item (In Copyright) web resource hash'
+          value: 8634fa12ac4d030a2a45b55b78ee5582
   responses:
     403ForbiddenInCopyright:
       description: Proxying prohibited by copyright
