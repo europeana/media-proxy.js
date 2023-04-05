@@ -86,7 +86,7 @@ jobs:
           path: .
       -
         name: Unarchive code coverage
-        run: tar -xf coverage.tar && rm coverage.tar
+        run: tar -xf coverage.tar && rm coverage.tar && ls -l coverage/lcov.info
       -
         name: SonarCloud Scan
         uses: sonarsource/sonarcloud-github-action@v1.7
