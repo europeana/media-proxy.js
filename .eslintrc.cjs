@@ -4,7 +4,8 @@ module.exports = {
     node: true
   },
   extends: [
-    'eslint:recommended'
+    'eslint:recommended',
+    'plugin:jest/recommended'
   ],
   parser: '@babel/eslint-parser',
   parserOptions: {
@@ -36,12 +37,14 @@ module.exports = {
     'func-style': ['error', 'declaration', { allowArrowFunctions: true }],
     'function-call-argument-newline': ['error', 'consistent'],
     indent: ['error', 2, { SwitchCase: 1 }],
+    'jest/expect-expect': 'error',
+    'jest/prefer-expect-assertions': 0,
+    'jest/no-conditional-expect': 1,
     'jsx-quotes': ['error', 'prefer-double'],
     'key-spacing': ['error', { afterColon: true }],
     'keyword-spacing': ['error', { before: true, after: true }],
     'linebreak-style': ['error', 'unix'],
-    // Disabled pending manual resolution of violations
-    // 'max-len': ['error', { code: 120 }],
+    'max-len': ['error', { code: 120 }],
     'no-array-constructor': 'error',
     'no-bitwise': 'error',
     'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
