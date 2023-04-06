@@ -67,7 +67,7 @@ const onProxyRes = (webResource) => (proxyRes, req, res) => {
 
 const onError = (err, req, res) => {
   // TODO: log errors to APM
-  console.error('err', err)
+  console.error(err)
 
   res.sendStatus(502)
 }
