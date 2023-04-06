@@ -12,7 +12,7 @@ const contentDisposition = ({ datasetId, localId, webResourceHash, contentType }
   return `attachment; filename="${filename}"`
 }
 
-const normaliseResHeaders = (webResource, proxyRes, res) => {
+const normaliseProxyResHeaders = (webResource, proxyRes) => {
   // Delete any headers we don't want to proxy.
   for (const header in proxyRes.headers) {
     if (!config.headersToProxy.includes(header)) {
@@ -24,13 +24,32 @@ const normaliseResHeaders = (webResource, proxyRes, res) => {
   if (!proxyRes.headers[HEADERS.CONTENT_TYPE]) {
     proxyRes.headers[HEADERS.CONTENT_TYPE] = CONTENT_TYPES.APPLICATION_OCTET_STREAM
   }
+}
 
+const setCustomResHeaders = (webResource, res) => {
   // Set custom x-europeana-web-resource header to URL of web resource
   res.setHeader(HEADERS.X_EUROPEANA_WEB_RESOURCE, webResource)
 }
 
+// Custom timeout handling to ensure empty responses aren't sent by http-proxy
+// just aborting without sending status code
+// TODO: make timeout durations configurable?
+// TODO: log errors to APM
+const handleTimeout = (req, res) => {
+  req.setTimeout(10000, () => {
+    req.abort()
+    res.sendStatus(504)
+  })
+}
+
+const onProxyReq = (webResource) => (proxyReq, req, res) => {
+  setCustomResHeaders(webResource, res)
+  handleTimeout(proxyReq, res)
+  handleTimeout(req, res)
+}
+
 const onProxyRes = (webResource) => (proxyRes, req, res) => {
-  normaliseResHeaders(webResource, proxyRes, res)
+  normaliseProxyResHeaders(webResource, proxyRes)
 
   if (proxyRes.statusCode > 399) {
     // Upstream error. Normalise to plain-text response.
@@ -46,6 +65,13 @@ const onProxyRes = (webResource) => (proxyRes, req, res) => {
   }
 }
 
+const onError = (err, req, res) => {
+  // TODO: log errors to APM
+  console.error('err', err)
+
+  res.sendStatus(502)
+}
+
 export default (webResource) => {
   const webResourceUrl = new URL(webResource)
 
@@ -53,12 +79,14 @@ export default (webResource) => {
     changeOrigin: true,
     followRedirects: true,
     logLevel: process.NODE_ENV === 'production' ? 'error' : 'info',
+    onError,
+    onProxyReq: onProxyReq(webResource),
     onProxyRes: onProxyRes(webResource),
     pathRewrite: () => `${webResourceUrl.pathname}${webResourceUrl.search}`,
-    // TODO: make configurable?
-    proxyTimeout: 10000,
-    target: webResourceUrl.origin,
-    // TODO: make configurable?
-    timeout: 10000
+    // NOTE: do not use this, as it results in empty responses
+    // proxyTimeout: 10000,
+    target: webResourceUrl.origin
+    // NOTE: do not use this, as it results in empty responses
+    // timeout: 11000
   })
 }
