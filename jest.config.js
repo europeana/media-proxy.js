@@ -15,6 +15,9 @@ export default {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1'
   },
+  setupFiles: [
+    '<rootDir>/tests/unit/setup.js'
+  ],
   testPathIgnorePatterns: [
     '/node_modules/',
     '<rootDir>/tmp/',

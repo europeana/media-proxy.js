@@ -12,10 +12,10 @@ on:
     types: [opened, synchronize, reopened]
     paths-ignore:
     - '**.md'
-    - 'packages/contentful/migrations/**'
+    - 'docs/**'
 
-env:
-  DOCKER_REPOSITORY: ${{ vars.DOCKER_REPOSITORY }}
+# env:
+#   DOCKER_REPOSITORY: ${{ vars.DOCKER_REPOSITORY }}
 
 jobs:
   # Run code linting on main and all PRs (including drafts)

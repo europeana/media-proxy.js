@@ -31,13 +31,13 @@
 import md5 from 'md5'
 
 import webResourceProxy from '../middlewares/web-resource-proxy.js'
-import getWebResource from '../sources/index.js'
+import source from '../sources/index.js'
 
 export default async (req, res) => {
   const itemId = `/${req.params.datasetId}/${req.params.localId}`
 
   try {
-    const webResource = await getWebResource(itemId, req.params.webResourceHash)
+    const webResource = await source.find(itemId, req.params.webResourceHash)
 
     if (!webResource) {
       // No isShownBy and no hash, or invalid hash

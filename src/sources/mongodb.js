@@ -1,40 +1,54 @@
 import { MongoClient } from 'mongodb'
 import md5 from 'md5'
+
 import config from '../config.js'
 
-let mongoClient
-
-export default async (itemId, webResourceHash) => {
-  if (!mongoClient) {
-    mongoClient = new MongoClient(config.mongodb.uri)
+export default class MongoSource {
+  constructor (client) {
+    this.mongoClient = client
   }
 
-  const mongoDb = mongoClient.db(config.mongodb.database)
-  const aggregation = await mongoDb.collection('Aggregation')
-    .findOne({ about: `/aggregation/provider${itemId}` })
-
-  let webResourceId
-  if (webResourceHash) {
-    webResourceId = [aggregation.edmIsShownBy].concat(aggregation.hasView)
-      .find((wr) => md5(wr) === webResourceHash)
-  } else {
-    webResourceId = aggregation.edmIsShownBy
+  get client () {
+    if (!this.mongoClient) {
+      this.mongoClient = new MongoClient(config.mongodb.uri)
+    }
+    return this.mongoClient
   }
 
-  if (!webResourceId) {
-    return null
+  get db () {
+    if (!this.mongoDb) {
+      this.mongoDb = this.client.db(config.mongodb.database)
+    }
+    return this.mongoDb
   }
 
-  let edmRights = aggregation.edmRights.def[0]
+  async find (itemId, webResourceHash) {
+    const aggregation = await this.db.collection('Aggregation')
+      .findOne({ about: `/aggregation/provider${itemId}` })
 
-  const webResourceDoc = await mongoDb.collection('WebResource')
-    .findOne({ about: webResourceId })
-  if (webResourceDoc?.webResourceEdmRights) {
-    edmRights = webResourceDoc.webResourceEdmRights.def[0]
-  }
+    let webResourceId
+    if (webResourceHash) {
+      webResourceId = [aggregation.edmIsShownBy].concat(aggregation.hasView)
+        .find((wr) => md5(wr) === webResourceHash)
+    } else {
+      webResourceId = aggregation.edmIsShownBy
+    }
 
-  return {
-    edmRights,
-    id: webResourceId
+    if (!webResourceId) {
+      return null
+    }
+
+    let edmRights = aggregation.edmRights.def[0]
+
+    const webResourceDoc = await this.db.collection('WebResource')
+      .findOne({ about: webResourceId })
+    if (webResourceDoc?.webResourceEdmRights) {
+      edmRights = webResourceDoc.webResourceEdmRights.def[0]
+    }
+
+    return {
+      edmRights,
+      id: webResourceId
+    }
   }
 }
