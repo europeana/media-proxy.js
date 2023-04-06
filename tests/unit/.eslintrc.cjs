@@ -3,6 +3,7 @@ module.exports = {
     jest: true
   },
   rules: {
+    'max-len': 'off',
     'no-undef': 'off'
   }
-};
+}

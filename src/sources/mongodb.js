@@ -1,16 +1,29 @@
 import { MongoClient } from 'mongodb'
 import md5 from 'md5'
+
 import config from '../config.js'
 
 export default class MongoSource {
-  constructor() {
-    this.mongoClient = new MongoClient(config.mongodb.uri)
+  constructor (client) {
+    this.mongoClient = client
+  }
+
+  get client () {
+    if (!this.mongoClient) {
+      this.mongoClient = new MongoClient(config.mongodb.uri)
+    }
+    return this.mongoClient
+  }
+
+  get db () {
+    if (!this.mongoDb) {
+      this.mongoDb = this.client.db(config.mongodb.database)
+    }
+    return this.mongoDb
   }
 
   async find (itemId, webResourceHash) {
-    const mongoDb = this.mongoClient.db(config.mongodb.database)
-
-    const aggregation = await mongoDb.collection('Aggregation')
+    const aggregation = await this.db.collection('Aggregation')
       .findOne({ about: `/aggregation/provider${itemId}` })
 
     let webResourceId
@@ -27,7 +40,7 @@ export default class MongoSource {
 
     let edmRights = aggregation.edmRights.def[0]
 
-    const webResourceDoc = await mongoDb.collection('WebResource')
+    const webResourceDoc = await this.db.collection('WebResource')
       .findOne({ about: webResourceId })
     if (webResourceDoc?.webResourceEdmRights) {
       edmRights = webResourceDoc.webResourceEdmRights.def[0]

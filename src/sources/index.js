@@ -1,5 +1,12 @@
 import config from '../config.js'
-import getWebResourceFromRecordAPI from './api.js'
-import getWebResourceFromMongoDB from './mongodb.js'
+import RecordApiSource from './record-api.js'
+import MongoSource from './mongodb.js'
 
-export default config.app.dataSource === 'api' ? getWebResourceFromRecordAPI : getWebResourceFromMongoDB
+let configuredSource
+if (config.app.dataSource === 'api') {
+  configuredSource = new RecordApiSource
+} else {
+  configuredSource = new MongoSource
+}
+
+export default configuredSource
