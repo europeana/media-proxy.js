@@ -1,5 +1,10 @@
 # Europeana Media Proxy
 
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=europeana_media-proxy.js&metric=sqale_rating)](https://sonarcloud.io/dashboard?id=europeana_media-proxy.js)
+[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=europeana_media-proxy.js&metric=reliability_rating)](https://sonarcloud.io/dashboard?id=europeana_media-proxy.js)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=europeana_media-proxy.js&metric=security_rating)](https://sonarcloud.io/dashboard?id=europeana_media-proxy.js)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=europeana_media-proxy.js&metric=coverage)](https://sonarcloud.io/summary/new_code?id=europeana_media-proxy.js)
+
 Micro-service for proxying Europeana `edm:hasView` and `edm:isShownBy` web
 resources from providers' websites.
 
