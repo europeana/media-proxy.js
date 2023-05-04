@@ -1,4 +1,4 @@
-FROM node:16-alpine AS build
+FROM node:18-alpine AS build
 
 WORKDIR /app
 RUN mkdir dist
@@ -14,7 +14,7 @@ COPY src ./src
 RUN npm run build
 
 
-FROM gcr.io/distroless/nodejs:16
+FROM gcr.io/distroless/nodejs:18
 
 ENV PORT=8080 \
     HOST=0.0.0.0 \
