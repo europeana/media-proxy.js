@@ -1,15 +1,17 @@
 import md5 from 'md5'
 
-// TODO: also include any other original query params
 const redirectLocation = ({ datasetId, localId, webResourceHash, query } = {}) => {
   let location = `/media/${datasetId}/${localId}`
+
   if (webResourceHash) {
     location = `${location}/${webResourceHash}`
   }
+
   const queryString = new URLSearchParams(query).toString()
   if (queryString !== '') {
     location = `${location}?${queryString}`
   }
+
   return location
 }
 
