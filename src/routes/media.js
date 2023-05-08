@@ -31,9 +31,20 @@
 import md5 from 'md5'
 
 import webResourceProxy from '../middlewares/web-resource-proxy.js'
-import source from '../sources/index.js'
+import { requestDataSource } from '../sources/index.js'
 
 export default async (req, res) => {
+  let source
+  try {
+    source = requestDataSource(req)
+  } catch (error) {
+    if (error.message === 'Unauthorised API URL') {
+      return res.sendStatus(403)
+    } else {
+      throw (error)
+    }
+  }
+
   const itemId = `/${req.params.datasetId}/${req.params.localId}`
 
   try {

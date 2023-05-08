@@ -3,9 +3,27 @@ import md5 from 'md5'
 import config from '../config.js'
 
 export default class RecordApiSource {
+  static forUrl (apiUrl) {
+    if (typeof apiUrl === 'string') {
+      apiUrl = new URL(apiUrl)
+    }
+    if (apiUrl.pathname === '/api') {
+      apiUrl.pathname = '/record'
+    }
+    apiUrl = apiUrl.toString()
+    if (!config.europeana.permittedApiUrls.includes(apiUrl)) {
+      throw new Error('Unauthorised API URL')
+    }
+    return new RecordApiSource(apiUrl)
+  }
+
+  constructor (apiUrl) {
+    this.apiUrl = apiUrl || config.europeana.apiUrl
+  }
+
   async find (itemId, webResourceHash) {
     const apiResponse = await axios({
-      baseURL: config.europeana.apiUrl,
+      baseURL: this.apiUrl,
       method: 'GET',
       params: {
         wskey: config.europeana.apiKey

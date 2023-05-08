@@ -18,7 +18,8 @@ export default {
   },
   europeana: {
     apiKey: process.env['EUROPEANA_API_KEY'],
-    apiUrl: process.env['EUROPEANA_API_URL'] || 'https://api.europeana.eu/record'
+    apiUrl: process.env['EUROPEANA_API_URL'] || 'https://api.europeana.eu/record',
+    permittedApiUrls: (process.env['EUROPEANA_PERMITTED_API_URLS'] || 'https://api.europeana.eu/record').split(',')
   },
   headersToProxy: [
     HEADERS.ACCEPT_RANGES,
