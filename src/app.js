@@ -10,5 +10,6 @@ app.use(middlewares.cors)
 
 app.get('/', routes.health)
 app.get('/media/:datasetId/:localId/:webResourceHash?', routes.media)
+app.get('/:datasetId/:localId', routes.legacy)
 
 export default app
