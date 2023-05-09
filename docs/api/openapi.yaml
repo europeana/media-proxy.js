@@ -25,6 +25,12 @@ tags:
   - name: general
 components:
   parameters:
+    apiUrl:
+      name: api_url
+      in: query
+      description: Europeana Record API URL for web resource resolution & validation
+      schema:
+        type: string
     datasetId:
       name: datasetId
       in: path
@@ -39,6 +45,12 @@ components:
         maalaus-example:
           summary: '"maalaus" item (In Copyright) dataset ID'
           value: 2021009
+    legacyView:
+      name: view
+      in: query
+      description: Web resource URL to proxy (from legacy media proxy URLs)
+      schema:
+        type: string
     localId:
       name: localId
       in: path
@@ -96,6 +108,7 @@ paths:
     parameters:
       - $ref: '#/components/parameters/datasetId'
       - $ref: '#/components/parameters/localId'
+      - $ref: '#/components/parameters/apiUrl'
     get:
       tags:
         - media
@@ -141,6 +154,7 @@ paths:
       - $ref: '#/components/parameters/datasetId'
       - $ref: '#/components/parameters/localId'
       - $ref: '#/components/parameters/webResourceHash'
+      - $ref: '#/components/parameters/apiUrl'
       - $ref: '#/components/headers/acceptAllHeader'
     get:
       tags:
@@ -219,6 +233,32 @@ paths:
               schema:
                 type: string
                 example: Not Found
+  /{datasetId}/{localId}:
+    parameters:
+      - $ref: '#/components/parameters/datasetId'
+      - $ref: '#/components/parameters/localId'
+      - $ref: '#/components/parameters/apiUrl'
+      - $ref: '#/components/parameters/legacyView'
+    get:
+      tags:
+        - legacy
+      summary: Redirect legacy media proxy URLs to current equivalents
+      description: |
+        1. **TODO**
+      responses:
+        '301':
+          description: Redirect
+          headers:
+            location:
+              description: Europeana media proxy URL /media prefix, and optionally MD5 hash of web resource
+              schema:
+                type: string
+                example: /media/2020601/https___1914_1918_europeana_eu_contributions_14524
+          content:
+            '*/*':
+              schema:
+                type: string
+                example: Found. Redirecting to /media/2020601/https___1914_1918_europeana_eu_contributions_14524
 servers:
   - url: https://media-proxy-js.test.eanadev.org
     description: Test server
