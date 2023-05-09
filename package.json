@@ -34,7 +34,6 @@
     "jest": "^29.5.0",
     "nodemon": "^2.0.20",
     "rollup": "^3.14.0",
-    "serve": "^14.2.0",
     "sinon": "^15.0.3"
   },
   "engines": {
@@ -46,11 +45,11 @@
   },
   "scripts": {
     "build": "rollup -c",
+    "dev": "nodemon -r dotenv/config -r ./src/monitor.cjs src/server.js",
     "docs": "serve -p 4000 docs/api",
     "lint:fix": "npm run lint -- --fix",
     "lint": "eslint --no-fix --ignore-path .gitignore .",
-    "start": "node dist/server.cjs",
-    "start:dev": "nodemon -r dotenv/config src/server.js",
+    "start": "node -r ./dist/monitor.cjs dist/server.cjs",
     "test": "node --expose-gc --no-compilation-cache --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.js",
     "test:coverage": "npm run test -- --coverage",
     "test:coverage:ci": "npm run test -- --coverage --maxWorkers 2",

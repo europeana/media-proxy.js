@@ -4,9 +4,14 @@ import resolve from '@rollup/plugin-node-resolve'
 import terser from '@rollup/plugin-terser'
 
 export default {
-  input: 'src/server.js',
+  input: {
+    monitor: 'src/monitor.cjs',
+    server: 'src/server.js'
+  },
   output: {
-    file: 'dist/server.cjs',
+    chunkFileNames: '[name]-[hash].cjs',
+    dir: 'dist',
+    entryFileNames: '[name].cjs',
     format: 'cjs',
     sourcemap: true
   },

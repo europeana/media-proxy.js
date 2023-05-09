@@ -28,4 +28,4 @@ COPY --from=build /app/dist .
 
 USER 1000
 
-CMD ["server.cjs"]
+CMD ["-r", "monitor.cjs", "server.cjs"]

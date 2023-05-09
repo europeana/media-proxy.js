@@ -47,7 +47,7 @@ The service will be available at http://localhost:3000/
 * .env file support
 
 ```
-npm run start:dev
+npm run dev
 ```
 
 The service will be available at http://localhost:3000/
