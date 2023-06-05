@@ -23,6 +23,7 @@ export default async (req, res) => {
     redirectOptions.webResourceHash = md5(redirectOptions.query.view)
     delete redirectOptions.query.view
   }
+
   if (redirectOptions.query['api_url']) {
     const apiUrl = new URL(redirectOptions.query['api_url'])
     if (apiUrl.pathname === '/api') {
