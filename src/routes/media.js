@@ -58,8 +58,12 @@ export default async (req, res) => {
       // In copyright, proxying forbidden
       return res.sendStatus(403)
     } else if (!req.params.webResourceHash) {
-      // Redirect to the URL with the hash
-      return res.redirect(302, `/media/${req.params.datasetId}/${req.params.localId}/${md5(webResource.id)}`)
+      // Redirect to the URL with the hash, preserving the query
+      let redirectPath = `/media/${req.params.datasetId}/${req.params.localId}/${md5(webResource.id)}`
+      const query = new URLSearchParams(req.query).toString()
+      if (query !== '')
+      redirectPath = `${redirectPath}?${query}`
+      return res.redirect(302, redirectPath)
     }
 
     // Try proxying it
