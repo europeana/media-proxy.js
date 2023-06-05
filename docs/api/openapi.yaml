@@ -45,6 +45,12 @@ components:
         maalaus-example:
           summary: '"maalaus" item (In Copyright) dataset ID'
           value: 2021009
+    disposition:
+      name: disposition
+      in: query
+      description: "Content disposition: either attachment (default) or inline"
+      schema:
+        type: string
     legacyView:
       name: view
       in: query
@@ -124,7 +130,8 @@ paths:
            in copyright, respond with status code 403.
         1. Responds with status code 302 to redirect to the endpoint for proxying
            the media, by appending the MD5 hash of the web resource, i.e.
-           `/media/{datasetId}/{localId}/{webResourceHash}`.
+           `/media/{datasetId}/{localId}/{webResourceHash}`. Any parameters in the
+           URL query will be preserved.
       operationId: getRedirectEdmIsShownBy
       responses:
         '302':
@@ -155,6 +162,7 @@ paths:
       - $ref: '#/components/parameters/localId'
       - $ref: '#/components/parameters/webResourceHash'
       - $ref: '#/components/parameters/apiUrl'
+      - $ref: '#/components/parameters/disposition'
       - $ref: '#/components/headers/acceptAllHeader'
     get:
       tags:
