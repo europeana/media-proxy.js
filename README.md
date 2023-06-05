@@ -19,9 +19,57 @@ Documentation is available at https://europeana.github.io/media-proxy.js/api/.
   * Europeana item metadata MongoDB access credentials (recommended)
   * [Europeana API key](https://pro.europeana.eu/get-api)
 
+
+## Configuration
+
+Configuration is by environment variable.
+
+### Required
+
+#### Data source
+
+Either a Europeana item metadata MongoDB, or a Europeana Record API is required
+as a data source. MongoDB is recommended.
+
+#### MongoDB
+
+```sh
+APP_DATA_SOURCE=mongodb
+MONGODB_DATABASE=europeana-item-metadata
+MONGODB_URI=mongodb://user:pass@server1.example.org:27017,server2.example.org:27017
+```
+
+#### Record API
+
+```sh
+APP_DATA_SOURCE=record-api
+EUROPEANA_API_KEY=YOUR_API_KEY
+EUROPEANA_API_URL=https://api.europeana.eu/record
+```
+
+### Optional
+
+#### Alternative Europeana Record APIs
+
+Should you need to permit the use of alternative Europeana Record APIs on a
+per-request basis, these need to be specified as a comma-separated list:
+```sh
+EUROPEANA_PERMITTED_API_URLS="https://api2.europeana.eu/record,https://api3.europeana.eu/record"
+```
+
+#### Elastic APM
+
+To enable transaction logging to Elastic APM:
+```sh
+ELASTIC_APM_SERVER_URL=https://apm.example.org
+ELASTIC_APM_LOG_LEVEL=info
+ELASTIC_APM_ENVIRONMENT=development
+```
+
 ## Development
 
 The Europeana Media Proxy is written as an Express.js app for Node.js.
+
 
 ### Install
 
