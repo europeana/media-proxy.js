@@ -1,4 +1,4 @@
-import { HEADERS } from './lib/constants.js'
+import { EUROPEANA_APIS, HTTP_HEADERS } from './lib/constants.js'
 
 export default {
   app: {
@@ -6,16 +6,16 @@ export default {
   },
   europeana: {
     apiKey: process.env['EUROPEANA_API_KEY'],
-    apiUrl: process.env['EUROPEANA_API_URL'] || 'https://api.europeana.eu/record',
-    permittedApiUrls: (process.env['EUROPEANA_PERMITTED_API_URLS'] || 'https://api.europeana.eu/record').split(',')
+    apiUrl: process.env['EUROPEANA_API_URL'] || EUROPEANA_APIS.RECORD,
+    permittedApiUrls: (process.env['EUROPEANA_PERMITTED_API_URLS'] || EUROPEANA_APIS.RECORD).split(',')
   },
   headersToProxy: [
-    HEADERS.ACCEPT_RANGES,
-    HEADERS.CONTENT_LENGTH,
-    HEADERS.CONTENT_TYPE,
-    HEADERS.ETAG,
-    HEADERS.LAST_MODIFIED,
-    HEADERS.LINK
+    HTTP_HEADERS.ACCEPT_RANGES,
+    HTTP_HEADERS.CONTENT_LENGTH,
+    HTTP_HEADERS.CONTENT_TYPE,
+    HTTP_HEADERS.ETAG,
+    HTTP_HEADERS.LAST_MODIFIED,
+    HTTP_HEADERS.LINK
   ],
   mongodb: {
     database: process.env.MONGODB_DATABASE,

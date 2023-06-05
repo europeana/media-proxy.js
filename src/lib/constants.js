@@ -2,7 +2,11 @@ export const CONTENT_TYPES = {
   APPLICATION_OCTET_STREAM: 'application/octet-stream'
 }
 
-export const HEADERS = {
+export const EUROPEANA_APIS = {
+  RECORD: 'https://api.europeana.eu/record'
+}
+
+export const HTTP_HEADERS = {
   ACCEPT_RANGES: 'accept-ranges',
   CONTENT_DISPOSITION: 'content-disposition',
   CONTENT_LENGTH: 'content-length',

@@ -2,14 +2,17 @@ import { createProxyMiddleware } from 'http-proxy-middleware'
 import mime from 'mime-types'
 
 import config from '../config.js'
-import { CONTENT_TYPES, HEADERS } from '../lib/constants.js'
+import { CONTENT_TYPES, HTTP_HEADERS } from '../lib/constants.js'
 
-const contentDisposition = ({ datasetId, localId, webResourceHash, contentType } = {}) => {
+const contentDisposition = ({ contentType, req } = {}) => {
+  const { datasetId, localId, webResourceHash } = req.params
+  const attachmentOrInline = req.query.disposition === 'inline' ? 'inline' : 'attachment'
+
   const basename = `Europeana.eu-${datasetId}-${localId}-${webResourceHash}`
   // Get filename extension from content type, falling back to "bin" if that fails
   const extension = mime.extension(contentType) || mime.extension(CONTENT_TYPES.APPLICATION_OCTET_STREAM)
   const filename = `${basename}.${extension}`
-  return `attachment; filename="${filename}"`
+  return `${attachmentOrInline}; filename="${filename}"`
 }
 
 const normaliseProxyResHeaders = (webResource, proxyRes) => {
@@ -21,14 +24,14 @@ const normaliseProxyResHeaders = (webResource, proxyRes) => {
   }
 
   // Default content-type to application/octet-stream, if not present
-  if (!proxyRes.headers[HEADERS.CONTENT_TYPE]) {
-    proxyRes.headers[HEADERS.CONTENT_TYPE] = CONTENT_TYPES.APPLICATION_OCTET_STREAM
+  if (!proxyRes.headers[HTTP_HEADERS.CONTENT_TYPE]) {
+    proxyRes.headers[HTTP_HEADERS.CONTENT_TYPE] = CONTENT_TYPES.APPLICATION_OCTET_STREAM
   }
 }
 
 const setCustomResHeaders = (webResource, res) => {
   // Set custom x-europeana-web-resource header to URL of web resource
-  res.setHeader(HEADERS.X_EUROPEANA_WEB_RESOURCE, webResource)
+  res.setHeader(HTTP_HEADERS.X_EUROPEANA_WEB_RESOURCE, webResource)
 }
 
 // Custom timeout handling to ensure empty responses aren't sent by http-proxy
@@ -54,13 +57,14 @@ const onProxyRes = (webResource) => (proxyRes, req, res) => {
   if (proxyRes.statusCode > 399) {
     // Upstream error. Normalise to plain-text response.
     return res.sendStatus(proxyRes.statusCode)
-  } else if (mime.extension(proxyRes.headers[HEADERS.CONTENT_TYPE]) === 'html') {
+  } else if (mime.extension(proxyRes.headers[HTTP_HEADERS.CONTENT_TYPE]) === 'html') {
     // HTML document. Redirect to it.
     return res.redirect(302, webResource)
   } else {
     // Proxy everything else.
-    res.setHeader(HEADERS.CONTENT_DISPOSITION, contentDisposition({
-      ...req.params, contentType: proxyRes.headers[HEADERS.CONTENT_TYPE]
+    res.setHeader(HTTP_HEADERS.CONTENT_DISPOSITION, contentDisposition({
+      contentType: proxyRes.headers[HTTP_HEADERS.CONTENT_TYPE],
+      req
     }))
   }
 }
