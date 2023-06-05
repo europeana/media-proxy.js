@@ -1,12 +1,31 @@
 import axios from 'axios'
+import http from 'http'
+import https from 'https'
 import md5 from 'md5'
 import config from '../config.js'
 
 export default class RecordApiSource {
-  static forUrl (apiUrl) {
+  #axiosInstance
+  #apiUrl
+
+  constructor (apiUrl) {
+    this.apiUrl = apiUrl || config.europeana.apiUrl
+    this.#axiosInstance = axios.create({
+      baseURL: this.#apiUrl,
+      httpAgent: new http.Agent({ keepAlive: true }),
+      httpsAgent: new https.Agent({ keepAlive: true }),
+      params: {
+        wskey: config.europeana.apiKey
+      },
+      timeout: 10000
+    })
+  }
+
+  set apiUrl (apiUrl) {
     if (typeof apiUrl === 'string') {
       apiUrl = new URL(apiUrl)
     }
+    // TODO: don't do this here; do this in the legacy route handler
     if (apiUrl.pathname === '/api') {
       apiUrl.pathname = '/record'
     }
@@ -14,23 +33,14 @@ export default class RecordApiSource {
     if (!config.europeana.permittedApiUrls.includes(apiUrl)) {
       throw new Error('Unauthorised API URL')
     }
-    return new RecordApiSource(apiUrl)
-  }
-
-  constructor (apiUrl) {
-    this.apiUrl = apiUrl || config.europeana.apiUrl
+    this.#apiUrl = apiUrl
   }
 
   async find (itemId, webResourceHash) {
     let apiResponse
     try {
-      apiResponse = await axios({
-        baseURL: this.apiUrl,
+      apiResponse = await this.#axiosInstance({
         method: 'GET',
-        params: {
-          wskey: config.europeana.apiKey
-        },
-        timeout: 10000,
         url: `${itemId}.json`
       })
     } catch (apiError) {
@@ -46,7 +56,7 @@ export default class RecordApiSource {
     let webResourceId
     if (webResourceHash) {
       webResourceId = providerAggregation.webResources
-        .find((wr) => md5(wr.about) === webResourceHash).about
+        .find((wr) => md5(wr.about) === webResourceHash)?.about
     } else {
       webResourceId = providerAggregation.edmIsShownBy
     }
