@@ -43,27 +43,31 @@ const mediaRoute = async (req, res) => {
 
   const itemId = `/${req.params.datasetId}/${req.params.localId}`
 
-  try {
-    const webResource = await source.find(itemId, req.params.webResourceHash)
+  const webResource = await source.find(itemId, req.params.webResourceHash)
 
-    if (!webResource) {
-      // No isShownBy and no hash, or invalid hash
-      return res.sendStatus(404)
-    } else if (webResource.edmRights.includes('/InC/')) {
-      // In copyright, proxying forbidden
-      return res.sendStatus(403)
-    } else if (!req.params.webResourceHash) {
-      // Redirect to the URL with the hash, preserving the query
-      let redirectPath = `/media/${req.params.datasetId}/${req.params.localId}/${md5(webResource.id)}`
-      const query = new URLSearchParams(req.query).toString()
-      if (query !== '') {
-        redirectPath = `${redirectPath}?${query}`
-      }
-      return res.redirect(302, redirectPath)
+  if (!webResource) {
+    // No isShownBy and no hash, or invalid hash
+    return res.sendStatus(404)
+  } else if (webResource.edmRights.includes('/InC/')) {
+    // In copyright, proxying forbidden
+    return res.sendStatus(403)
+  } else if (!req.params.webResourceHash) {
+    // Redirect to the URL with the hash, preserving the query
+    let redirectPath = `/media/${req.params.datasetId}/${req.params.localId}/${md5(webResource.id)}`
+    const query = new URLSearchParams(req.query).toString()
+    if (query !== '') {
+      redirectPath = `${redirectPath}?${query}`
     }
+    return res.redirect(302, redirectPath)
+  }
 
-    // Try proxying it
-    webResourceProxy(webResource.id)(req, res)
+  // Try proxying it
+  webResourceProxy(webResource.id)(req, res)
+}
+
+export default async (req, res) => {
+  try {
+    await mediaRoute(req, res)
   } catch (error) {
     console.error(error.message)
 
@@ -76,14 +80,5 @@ const mediaRoute = async (req, res) => {
     }
 
     res.sendStatus(errorStatus || 502)
-  }
-}
-
-export default async (req, res) => {
-  try {
-    await mediaRoute(req, res)
-  } catch (error) {
-    console.error(error.message)
-    res.sendStatus(500)
   }
 }
