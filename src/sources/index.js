@@ -2,19 +2,23 @@ import config from '../config.js'
 import RecordApiSource from './record-api.js'
 import MongoSource from './mongodb.js'
 
-let configuredSource
-if (config.app.dataSource === 'record-api') {
-  configuredSource = new RecordApiSource
-} else {
-  configuredSource = new MongoSource
-}
-
-export const requestDataSource = (req) => {
-  if (req.query['recordApiUrl']) {
-    return RecordApiSource.forUrl(req.query['recordApiUrl'])
+const configured = () => {
+  if (config.app.dataSource === 'record-api') {
+    return new RecordApiSource
   } else {
-    return configuredSource
+    return new MongoSource
   }
 }
 
-export default configuredSource
+const requested = (req) => {
+  if (req.query['recordApiUrl']) {
+    return RecordApiSource.forUrl(req.query['recordApiUrl'])
+  } else {
+    return configured()
+  }
+}
+
+export default {
+  configured,
+  requested
+}

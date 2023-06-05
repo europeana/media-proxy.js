@@ -27,12 +27,12 @@
 import md5 from 'md5'
 
 import webResourceProxy from '../middlewares/web-resource-proxy.js'
-import { requestDataSource } from '../sources/index.js'
+import dataSources from '../sources/index.js'
 
 const mediaRoute = async (req, res) => {
   let source
   try {
-    source = requestDataSource(req)
+    source = dataSources.requested(req)
   } catch (error) {
     if (error.message === 'Unauthorised API URL') {
       return res.sendStatus(403)
