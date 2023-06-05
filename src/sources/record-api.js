@@ -22,14 +22,6 @@ export default class RecordApiSource {
   }
 
   set apiUrl (apiUrl) {
-    if (typeof apiUrl === 'string') {
-      apiUrl = new URL(apiUrl)
-    }
-    // TODO: don't do this here; do this in the legacy route handler
-    if (apiUrl.pathname === '/api') {
-      apiUrl.pathname = '/record'
-    }
-    apiUrl = apiUrl.toString()
     if (!config.europeana.permittedApiUrls.includes(apiUrl)) {
       throw new Error('Unauthorised API URL')
     }

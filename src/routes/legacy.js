@@ -24,7 +24,11 @@ export default async (req, res) => {
     delete redirectOptions.query.view
   }
   if (redirectOptions.query['api_url']) {
-    redirectOptions.query.recordApiUrl = redirectOptions.query['api_url']
+    const apiUrl = new URL(redirectOptions.query['api_url'])
+    if (apiUrl.pathname === '/api') {
+      apiUrl.pathname = '/record'
+    }
+    redirectOptions.query.recordApiUrl = apiUrl.toString()
     delete redirectOptions.query['api_url']
   }
 
