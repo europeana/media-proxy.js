@@ -61,8 +61,9 @@ export default async (req, res) => {
       // Redirect to the URL with the hash, preserving the query
       let redirectPath = `/media/${req.params.datasetId}/${req.params.localId}/${md5(webResource.id)}`
       const query = new URLSearchParams(req.query).toString()
-      if (query !== '')
-      redirectPath = `${redirectPath}?${query}`
+      if (query !== '') {
+        redirectPath = `${redirectPath}?${query}`
+      }
       return res.redirect(302, redirectPath)
     }
 
