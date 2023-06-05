@@ -72,10 +72,14 @@ const onProxyRes = (webResource) => (proxyRes, req, res) => {
 }
 
 const onError = (err, req, res) => {
-  // TODO: log errors to APM
-  console.error(err)
+  // TODO: log error message to APM?
+  // let errorMessage = 'Bad Gateway'
+  //
+  // if (err.code === 'CERT_HAS_EXPIRED') {
+  //   errorMessage = err.message
+  // }
 
-  res.sendStatus(502)
+  return res.sendStatus(502)
 }
 
 export default (webResource) => {

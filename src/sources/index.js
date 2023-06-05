@@ -10,8 +10,8 @@ if (config.app.dataSource === 'api') {
 }
 
 export const requestDataSource = (req) => {
-  if (req.query['api_url']) {
-    return RecordApiSource.forUrl(req.query['api_url'])
+  if (req.query['recordApiUrl']) {
+    return RecordApiSource.forUrl(req.query['recordApiUrl'])
   } else {
     return configuredSource
   }

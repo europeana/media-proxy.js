@@ -25,12 +25,6 @@ tags:
   - name: general
 components:
   parameters:
-    apiUrl:
-      name: api_url
-      in: query
-      description: Europeana Record API URL for web resource resolution & validation
-      schema:
-        type: string
     datasetId:
       name: datasetId
       in: path
@@ -49,6 +43,14 @@ components:
       name: disposition
       in: query
       description: "Content disposition: either attachment (default) or inline"
+      schema:
+        type: string
+    legacyRecordApiUrl:
+      name: api_url
+      in: query
+      description: |
+        Europeana Record API URL for web resource resolution & validation
+        (from legacy media proxy URLs)
       schema:
         type: string
     legacyView:
@@ -71,6 +73,12 @@ components:
         maalaus-example:
           summary: '"maalaus" item (In Copyright) local ID'
           value: _0CD7C92E0A18088F22111B9C00BD5EF1
+    recordApiUrl:
+      name: recordApiUrl
+      in: query
+      description: Europeana Record API URL for web resource resolution & validation
+      schema:
+        type: string
     webResourceHash:
       name: webResourceHash
       in: path
@@ -86,8 +94,11 @@ components:
           summary: '"maalaus" item (In Copyright) web resource hash'
           value: 8634fa12ac4d030a2a45b55b78ee5582
   responses:
-    403ForbiddenInCopyright:
-      description: Proxying prohibited by copyright
+    403Forbidden:
+      description: |
+        Proxying prohibited, due to:
+        * Copyright of item or web resource
+        * Requested Record API is unauthorised
       content:
         '*/*':
           schema:
@@ -114,12 +125,15 @@ paths:
     parameters:
       - $ref: '#/components/parameters/datasetId'
       - $ref: '#/components/parameters/localId'
-      - $ref: '#/components/parameters/apiUrl'
+      - $ref: '#/components/parameters/recordApiUrl'
     get:
       tags:
         - media
       summary: Redirect to proxy media for edm:isShownBy
       description: |
+        1. If a Record API URL has been specified in `recordApiUrl`, checks if
+           it is permitted as a data source, and if not, responds with status
+           code 403. (If none specified, uses the default data source.)
         1. Looks in our database for a Europeana item identified by the path
            parameters `/{datasetId}/{localId}`. If no such item is found, responds
            with status code 404.
@@ -148,7 +162,7 @@ paths:
                 type: string
                 example: Found. Redirecting to /media/2020601/https___1914_1918_europeana_eu_contributions_14524/304028f2553becc2bb0e4c0164439ec8
         '403':
-          $ref: '#/components/responses/403ForbiddenInCopyright'
+          $ref: '#/components/responses/403Forbidden'
         '404':
           description: Item not found, or has no edm:isShownBy
           content:
@@ -161,7 +175,7 @@ paths:
       - $ref: '#/components/parameters/datasetId'
       - $ref: '#/components/parameters/localId'
       - $ref: '#/components/parameters/webResourceHash'
-      - $ref: '#/components/parameters/apiUrl'
+      - $ref: '#/components/parameters/recordApiUrl'
       - $ref: '#/components/parameters/disposition'
       - $ref: '#/components/headers/acceptAllHeader'
     get:
@@ -169,6 +183,9 @@ paths:
         - media
       summary: Proxy media for specific web resource
       description: |
+        1. If a Record API URL has been specified in `recordApiUrl`, checks if
+           it is permitted as a data source, and if not, responds with status
+           code 403. (If none specified, uses the default data source.)
         1. Looks in our database for a Europeana item identified by the path
            parameters `/{datasetId}/{localId}`. If no such item is found, responds
            with status code 404.
@@ -233,7 +250,7 @@ paths:
                 type: string
                 example: Found. Redirecting to /media/2020601/https___1914_1918_europeana_eu_contributions_14524/304028f2553becc2bb0e4c0164439ec8
         '403':
-          $ref: '#/components/responses/403ForbiddenInCopyright'
+          $ref: '#/components/responses/403Forbidden'
         '404':
           description: Item not found, or has no such web resource
           content:
@@ -245,14 +262,12 @@ paths:
     parameters:
       - $ref: '#/components/parameters/datasetId'
       - $ref: '#/components/parameters/localId'
-      - $ref: '#/components/parameters/apiUrl'
+      - $ref: '#/components/parameters/legacyRecordApiUrl'
       - $ref: '#/components/parameters/legacyView'
     get:
       tags:
         - legacy
       summary: Redirect legacy media proxy URLs to current equivalents
-      description: |
-        1. **TODO**
       responses:
         '301':
           description: Redirect

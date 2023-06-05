@@ -22,16 +22,23 @@ export default class RecordApiSource {
   }
 
   async find (itemId, webResourceHash) {
-    const apiResponse = await axios({
-      baseURL: this.apiUrl,
-      method: 'GET',
-      params: {
-        wskey: config.europeana.apiKey
-      },
-      timeout: 10000,
-      url: `${itemId}.json`
-    })
-    // TODO: handle API errors like 404
+    let apiResponse
+    try {
+      apiResponse = await axios({
+        baseURL: this.apiUrl,
+        method: 'GET',
+        params: {
+          wskey: config.europeana.apiKey
+        },
+        timeout: 10000,
+        url: `${itemId}.json`
+      })
+    } catch (apiError) {
+      if (apiError.response?.status === 404) {
+        return null
+      }
+      throw apiError
+    }
 
     const item = apiResponse.data.object
     const providerAggregation = item.aggregations.find((agg) => agg.about === `/aggregation/provider${itemId}`)

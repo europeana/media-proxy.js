@@ -23,6 +23,10 @@ export default async (req, res) => {
     redirectOptions.webResourceHash = md5(redirectOptions.query.view)
     delete redirectOptions.query.view
   }
+  if (redirectOptions.query['api_url']) {
+    redirectOptions.query.recordApiUrl = redirectOptions.query['api_url']
+    delete redirectOptions.query['api_url']
+  }
 
   res.redirect(301, redirectLocation(redirectOptions))
 }
