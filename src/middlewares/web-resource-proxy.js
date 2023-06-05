@@ -2,11 +2,13 @@ import { createProxyMiddleware } from 'http-proxy-middleware'
 import mime from 'mime-types'
 
 import config from '../config.js'
-import { CONTENT_TYPES, HTTP_HEADERS } from '../lib/constants.js'
+import { CONTENT_DISPOSITIONS, CONTENT_TYPES, HTTP_HEADERS } from '../lib/constants.js'
 
 const contentDisposition = ({ contentType, req } = {}) => {
   const { datasetId, localId, webResourceHash } = req.params
-  const attachmentOrInline = req.query.disposition === 'inline' ? 'inline' : 'attachment'
+  const attachmentOrInline = (req.query.disposition === CONTENT_DISPOSITIONS.INLINE) ?
+    CONTENT_DISPOSITIONS.INLINE :
+    CONTENT_DISPOSITIONS.ATTACHMENT
 
   const basename = `Europeana.eu-${datasetId}-${localId}-${webResourceHash}`
   // Get filename extension from content type, falling back to "bin" if that fails

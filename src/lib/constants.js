@@ -1,3 +1,8 @@
+export const CONTENT_DISPOSITIONS = {
+  ATTACHMENT: 'attachment',
+  INLINE: 'inline'
+}
+
 export const CONTENT_TYPES = {
   APPLICATION_OCTET_STREAM: 'application/octet-stream'
 }
@@ -8,6 +13,7 @@ export const EUROPEANA_APIS = {
 
 export const HTTP_HEADERS = {
   ACCEPT_RANGES: 'accept-ranges',
+  CACHE_CONTROL: 'cache-control',
   CONTENT_DISPOSITION: 'content-disposition',
   CONTENT_LENGTH: 'content-length',
   CONTENT_TYPE: 'content-type',
