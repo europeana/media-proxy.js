@@ -14,7 +14,7 @@ const contentDisposition = ({ contentType, req } = {}) => {
   // Get filename extension from content type, falling back to "bin" if that fails
   const extension = mime.extension(contentType) || mime.extension(CONTENT_TYPES.APPLICATION_OCTET_STREAM)
   const filename = `${basename}.${extension}`
-  // return `${attachmentOrInline}; filename="${filename}"`
+  return `${attachmentOrInline}; filename="${filename}"`
 }
 
 const normaliseProxyResHeaders = (proxyRes) => {
