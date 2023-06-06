@@ -4,11 +4,11 @@ import sinon from 'sinon'
 const axiosInstanceStub = sinon.stub()
 const axiosCreateStub = sinon.stub(axios, 'create').returns(axiosInstanceStub)
 
-import config from '@/config.js'
-const europeanaConfigWas = { ...config.europeana }
-config.europeana.apiKey = 'API_KEY'
-config.europeana.apiUrl = 'https://api.example.org/record'
-config.europeana.permittedApiUrls = ['https://api.example.org/record', 'https://api2.example.org/record']
+const config = {
+  apiKey: 'API_KEY',
+  apiUrl: 'https://api.example.org/record',
+  permittedApiUrls: ['https://api.example.org/record', 'https://api2.example.org/record']
+}
 
 import RecordApiSource from '@/sources/record-api.js'
 
@@ -46,22 +46,19 @@ describe('@/sources/record-api.js', () => {
     axiosInstanceStub.reset()
     sinon.resetHistory()
   })
-  afterAll(() => {
-    sinon.restore()
-    config.europeana = { ...europeanaConfigWas }
-  })
+  afterAll(sinon.restore)
 
   describe('constructor', () => {
     describe('without an API URL specified', () => {
       it('creates an axios instance with default URL', () => {
-        new RecordApiSource()
+        new RecordApiSource(config)
 
         expect(axiosCreateStub.calledWith({
-          baseURL: config.europeana.apiUrl,
+          baseURL: config.apiUrl,
           httpAgent: sinon.match.object,
           httpsAgent: sinon.match.object,
           params: {
-            wskey: config.europeana.apiKey
+            wskey: config.apiKey
           },
           timeout: 10000
         })).toBe(true)
@@ -70,14 +67,14 @@ describe('@/sources/record-api.js', () => {
 
     describe('with a permitted API URL specified', () => {
       it('creates an axios instance with specified URL', () => {
-        new RecordApiSource(config.europeana.permittedApiUrls[1])
+        new RecordApiSource(config, config.permittedApiUrls[1])
 
         expect(axiosCreateStub.calledWith({
-          baseURL: config.europeana.permittedApiUrls[1],
+          baseURL: config.permittedApiUrls[1],
           httpAgent: sinon.match.object,
           httpsAgent: sinon.match.object,
           params: {
-            wskey: config.europeana.apiKey
+            wskey: config.apiKey
           },
           timeout: 10000
         })).toBe(true)
@@ -87,7 +84,7 @@ describe('@/sources/record-api.js', () => {
     describe('with an unpermitted API URL specified', () => {
       it('throws an "Unauthorised API URL" error', () => {
         expect(() => {
-          new RecordApiSource('https://unpermitted.example.org/record')
+          new RecordApiSource(config, 'https://unpermitted.example.org/record')
         }).toThrow('Unauthorised API URL')
         expect(axiosCreateStub.called).toBe(false)
       })
@@ -95,7 +92,7 @@ describe('@/sources/record-api.js', () => {
   })
 
   describe('find', () => {
-    const recordApiSource = new RecordApiSource
+    const recordApiSource = new RecordApiSource(config)
 
     describe('when the Record API responds with a 404 error', () => {
       it('returns null', async () => {

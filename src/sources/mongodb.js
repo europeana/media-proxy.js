@@ -1,25 +1,28 @@
 import { MongoClient } from 'mongodb'
 import md5 from 'md5'
 
-import config from '../config.js'
-
 export default class MongoSource {
-  constructor (client) {
-    this.mongoClient = client
+  #config = {}
+  #client
+  #db
+
+  constructor (config, client) {
+    this.#config = config
+    this.#client = client
   }
 
   get client () {
-    if (!this.mongoClient) {
-      this.mongoClient = new MongoClient(config.mongodb.uri)
+    if (!this.#client) {
+      this.#client = new MongoClient(this.#config.uri)
     }
-    return this.mongoClient
+    return this.#client
   }
 
   get db () {
-    if (!this.mongoDb) {
-      this.mongoDb = this.client.db(config.mongodb.database)
+    if (!this.#db) {
+      this.#db = this.client.db(this.#config.database)
     }
-    return this.mongoDb
+    return this.#db
   }
 
   async find (itemId, webResourceHash) {

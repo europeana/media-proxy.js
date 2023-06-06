@@ -30,10 +30,12 @@ import md5 from 'md5'
 
 import dataSources from '../sources/index.js'
 
+let config
+
 const mediaRoute = async (req, res, next) => {
   let source
   try {
-    source = dataSources.requested(req)
+    source = dataSources.requested(req, config)
   } catch (error) {
     if (error.message === 'Unauthorised API URL') {
       return res.sendStatus(403)
@@ -66,7 +68,9 @@ const mediaRoute = async (req, res, next) => {
   next()
 }
 
-export default async (req, res, next) => {
+export default (options) => async (req, res, next) => {
+  config = options
+
   try {
     await mediaRoute(req, res, next)
   } catch (error) {

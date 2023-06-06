@@ -18,7 +18,7 @@ describe('@/routes/media.js', () => {
       const req = {}
       const res = { sendStatus: sinon.spy() }
 
-      await mediaRoute(req, res)
+      await mediaRoute({})(req, res)
 
       expect(res.sendStatus.calledWith(403)).toBe(true)
     })
@@ -30,7 +30,7 @@ describe('@/routes/media.js', () => {
       const req = { params: {} }
       const res = { sendStatus: sinon.spy() }
 
-      await mediaRoute(req, res)
+      await mediaRoute({})(req, res)
 
       expect(res.sendStatus.calledWith(404)).toBe(true)
     })
@@ -42,7 +42,7 @@ describe('@/routes/media.js', () => {
       const req = { params: {} }
       const res = { sendStatus: sinon.spy() }
 
-      await mediaRoute(req, res)
+      await mediaRoute({})(req, res)
 
       expect(res.sendStatus.calledWith(403)).toBe(true)
     })
@@ -54,7 +54,7 @@ describe('@/routes/media.js', () => {
       const req = { params: { datasetId: '123', localId: 'abc' }, query: { disposition: 'inline' } }
       const res = { redirect: sinon.spy() }
 
-      await mediaRoute(req, res)
+      await mediaRoute({})(req, res)
 
       expect(res.redirect.calledWith(302, '/media/123/abc/d1299d035beb29c5b3b36e7f7c5c8610?disposition=inline')).toBe(true)
     })
@@ -76,13 +76,13 @@ describe('@/routes/media.js', () => {
     })
 
     it('set web resource ID on res.locals', async () => {
-      await mediaRoute(req, res, next)
+      await mediaRoute({})(req, res, next)
 
       expect(res.locals.webResourceId).toBe(webResourceId)
     })
 
     it('calls next', async () => {
-      await mediaRoute(req, res, next)
+      await mediaRoute({})(req, res, next)
 
       expect(next.called).toBe(true)
     })

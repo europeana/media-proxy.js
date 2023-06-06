@@ -2,30 +2,35 @@ import axios from 'axios'
 import http from 'http'
 import https from 'https'
 import md5 from 'md5'
-import config from '../config.js'
 
 export default class RecordApiSource {
+  #config = {}
   #axiosInstance
   #apiUrl
 
-  constructor (apiUrl) {
-    this.apiUrl = apiUrl || config.europeana.apiUrl
+  constructor (config, apiUrl) {
+    this.#config = config
+    this.apiUrl = apiUrl || this.#config.apiUrl
     this.#axiosInstance = axios.create({
       baseURL: this.#apiUrl,
       httpAgent: new http.Agent({ keepAlive: true }),
       httpsAgent: new https.Agent({ keepAlive: true }),
       params: {
-        wskey: config.europeana.apiKey
+        wskey: this.#config.apiKey
       },
       timeout: 10000
     })
   }
 
   set apiUrl (apiUrl) {
-    if (!config.europeana.permittedApiUrls.includes(apiUrl)) {
+    if (!this.permittedApiUrls.includes(apiUrl)) {
       throw new Error('Unauthorised API URL')
     }
     this.#apiUrl = apiUrl
+  }
+
+  get permittedApiUrls () {
+    return [this.#apiUrl].concat(this.#config.permittedApiUrls || [])
   }
 
   async find (itemId, webResourceHash) {

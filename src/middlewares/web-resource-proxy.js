@@ -1,8 +1,17 @@
 import { createProxyMiddleware } from 'http-proxy-middleware'
 import mime from 'mime-types'
 
-import config from '../config.js'
 import { CONTENT_DISPOSITIONS, CONTENT_TYPES, HTTP_HEADERS } from '../lib/constants.js'
+
+const headersToProxy = [
+  HTTP_HEADERS.ACCEPT_RANGES,
+  HTTP_HEADERS.CACHE_CONTROL,
+  HTTP_HEADERS.CONTENT_LENGTH,
+  HTTP_HEADERS.CONTENT_TYPE,
+  HTTP_HEADERS.ETAG,
+  HTTP_HEADERS.LAST_MODIFIED,
+  HTTP_HEADERS.LINK
+]
 
 const contentDisposition = ({ contentType, req } = {}) => {
   const { datasetId, localId, webResourceHash } = req.params
@@ -20,7 +29,7 @@ const contentDisposition = ({ contentType, req } = {}) => {
 const normaliseProxyResHeaders = (proxyRes) => {
   // Delete any headers we don't want to proxy.
   for (const header in proxyRes.headers) {
-    if (!config.headersToProxy.includes(header)) {
+    if (!headersToProxy.includes(header)) {
       delete proxyRes.headers[header]
     }
   }

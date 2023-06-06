@@ -50,17 +50,9 @@ class MongoClientStub {
 describe('@/sources/mongodb.js', () => {
   afterEach(sinon.resetHistory)
 
-  describe('constructor', () => {
-    it('stores client if supplied to MongoDB', () => {
-      const mongoSource = new MongoSource(new MongoClientStub)
-
-      expect(mongoSource.mongoClient).toBeTruthy()
-    })
-  })
-
   describe('find', () => {
     it('queries the Aggregation collection for the provider aggregation', async () => {
-      const mongoSource = new MongoSource(new MongoClientStub)
+      const mongoSource = new MongoSource({}, new MongoClientStub)
 
       await mongoSource.find(fixtures.itemId)
 
@@ -68,7 +60,7 @@ describe('@/sources/mongodb.js', () => {
     })
 
     it('queries the WebResource collection for the web resource', async () => {
-      const mongoSource = new MongoSource(new MongoClientStub)
+      const mongoSource = new MongoSource({}, new MongoClientStub)
 
       await mongoSource.find(fixtures.itemId)
 
@@ -78,7 +70,7 @@ describe('@/sources/mongodb.js', () => {
     describe('web resource selection', () => {
       describe('when no web resource hash is supplied', () => {
         it('selects the edm:isShownBy', async () => {
-          const mongoSource = new MongoSource(new MongoClientStub)
+          const mongoSource = new MongoSource({}, new MongoClientStub)
 
           const webResource = await mongoSource.find(fixtures.itemId)
 
@@ -88,7 +80,7 @@ describe('@/sources/mongodb.js', () => {
 
       describe('when the edm:isShownBy web resource hash is supplied', () => {
         it('selects the edm:isShownBy', async () => {
-          const mongoSource = new MongoSource(new MongoClientStub)
+          const mongoSource = new MongoSource({}, new MongoClientStub)
 
           const webResource = await mongoSource.find(fixtures.itemId, fixtures.edmIsShownByHash)
 
@@ -98,7 +90,7 @@ describe('@/sources/mongodb.js', () => {
 
       describe('when the edm:hasView web resource hash is supplied', () => {
         it('selects the edm:hasView', async () => {
-          const mongoSource = new MongoSource(new MongoClientStub)
+          const mongoSource = new MongoSource({}, new MongoClientStub)
 
           const webResource = await mongoSource.find(fixtures.itemId, fixtures.edmHasViewHash)
 
@@ -108,7 +100,7 @@ describe('@/sources/mongodb.js', () => {
 
       describe('when an unknown hash is supplied', () => {
         it('returns `null`', async () => {
-          const mongoSource = new MongoSource(new MongoClientStub)
+          const mongoSource = new MongoSource({}, new MongoClientStub)
 
           const webResource = await mongoSource.find(fixtures.itemId, fixtures.edmHasViewHash.slice(1))
 
@@ -120,7 +112,7 @@ describe('@/sources/mongodb.js', () => {
     describe('edm:rights selection', () => {
       describe('when the web resource has its own edm:rights', () => {
         it('selects the web resource edm:rights', async () => {
-          const mongoSource = new MongoSource(new MongoClientStub)
+          const mongoSource = new MongoSource({}, new MongoClientStub)
 
           const webResource = await mongoSource.find(fixtures.itemId, fixtures.edmHasViewHash)
 
@@ -130,7 +122,7 @@ describe('@/sources/mongodb.js', () => {
 
       describe('when the web resource does not have its own edm:rights', () => {
         it('selects the aggregation edm:rights', async () => {
-          const mongoSource = new MongoSource(new MongoClientStub)
+          const mongoSource = new MongoSource({}, new MongoClientStub)
 
           const webResource = await mongoSource.find(fixtures.itemId, fixtures.edmIsShownByHash)
 
