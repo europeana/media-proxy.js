@@ -11,7 +11,7 @@ export default () => {
       europeana: {
         apiKey: process.env['EUROPEANA_API_KEY'],
         apiUrl: process.env['EUROPEANA_API_URL'] || EUROPEANA_APIS.RECORD,
-        permittedApiUrls: (process.env['EUROPEANA_PERMITTED_API_URLS'] || EUROPEANA_APIS.RECORD).split(',')
+        permittedApiUrls: (process.env['EUROPEANA_PERMITTED_API_URLS'] || EUROPEANA_APIS.RECORD).split(',').map((url) => url.trim())
       },
       mongodb: {
         database: process.env.MONGODB_DATABASE,
