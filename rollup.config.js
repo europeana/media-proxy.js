@@ -16,7 +16,11 @@ export default {
     sourcemap: true
   },
   plugins: [
-    commonjs(),
+    commonjs({
+      dynamicRequireTargets: [
+        './node_modules/elastic-apm-node/**/*.js'
+      ]
+    }),
     json(),
     resolve({
       preferBuiltins: true
