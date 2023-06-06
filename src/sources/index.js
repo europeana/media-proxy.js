@@ -20,7 +20,7 @@ const configured = (config) => {
 
 const requested = (req, config) => {
   if (req.query['recordApiUrl']) {
-    return new RecordApiSource(req.query['recordApiUrl'])
+    return new RecordApiSource(config.europeana, req.query['recordApiUrl'])
   } else {
     return configured(config)
   }
