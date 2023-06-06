@@ -14,10 +14,10 @@ const contentDisposition = ({ contentType, req } = {}) => {
   // Get filename extension from content type, falling back to "bin" if that fails
   const extension = mime.extension(contentType) || mime.extension(CONTENT_TYPES.APPLICATION_OCTET_STREAM)
   const filename = `${basename}.${extension}`
-  return `${attachmentOrInline}; filename="${filename}"`
+  // return `${attachmentOrInline}; filename="${filename}"`
 }
 
-const normaliseProxyResHeaders = (webResource, proxyRes) => {
+const normaliseProxyResHeaders = (proxyRes) => {
   // Delete any headers we don't want to proxy.
   for (const header in proxyRes.headers) {
     if (!config.headersToProxy.includes(header)) {
@@ -31,9 +31,9 @@ const normaliseProxyResHeaders = (webResource, proxyRes) => {
   }
 }
 
-const setCustomResHeaders = (webResource, res) => {
+const setCustomResHeaders = (webResourceId, res) => {
   // Set custom x-europeana-web-resource header to URL of web resource
-  res.setHeader(HTTP_HEADERS.X_EUROPEANA_WEB_RESOURCE, webResource)
+  res.setHeader(HTTP_HEADERS.X_EUROPEANA_WEB_RESOURCE, webResourceId)
 }
 
 // Custom timeout handling to ensure empty responses aren't sent by http-proxy
@@ -47,21 +47,21 @@ const handleTimeout = (req, res) => {
   })
 }
 
-const onProxyReq = (webResource) => (proxyReq, req, res) => {
-  setCustomResHeaders(webResource, res)
+const onProxyReq = (webResourceId) => (proxyReq, req, res) => {
+  setCustomResHeaders(webResourceId, res)
   handleTimeout(proxyReq, res)
   handleTimeout(req, res)
 }
 
-const onProxyRes = (webResource) => (proxyRes, req, res) => {
-  normaliseProxyResHeaders(webResource, proxyRes)
+const onProxyRes = (webResourceId) => (proxyRes, req, res) => {
+  normaliseProxyResHeaders(proxyRes)
 
   if (proxyRes.statusCode > 399) {
     // Upstream error. Normalise to plain-text response.
     return res.sendStatus(proxyRes.statusCode)
   } else if (mime.extension(proxyRes.headers[HTTP_HEADERS.CONTENT_TYPE]) === 'html') {
     // HTML document. Redirect to it.
-    return res.redirect(302, webResource)
+    return res.redirect(302, webResourceId)
   } else {
     // Proxy everything else.
     res.setHeader(HTTP_HEADERS.CONTENT_DISPOSITION, contentDisposition({
@@ -82,21 +82,29 @@ const onError = (err, req, res) => {
   return res.sendStatus(502)
 }
 
-export default (webResource) => {
-  const webResourceUrl = new URL(webResource)
+export const webResourceProxyOptions = (webResourceId) => {
+  const webResourceUrl = new URL(webResourceId)
 
-  return createProxyMiddleware({
+  return {
     changeOrigin: true,
     followRedirects: true,
     logLevel: process.NODE_ENV === 'production' ? 'error' : 'info',
     onError,
-    onProxyReq: onProxyReq(webResource),
-    onProxyRes: onProxyRes(webResource),
+    onProxyReq: onProxyReq(webResourceId),
+    onProxyRes: onProxyRes(webResourceId),
     pathRewrite: () => `${webResourceUrl.pathname}${webResourceUrl.search}`,
     // NOTE: do not use this, as it results in empty responses
     // proxyTimeout: 10000,
     target: webResourceUrl.origin
     // NOTE: do not use this, as it results in empty responses
     // timeout: 11000
-  })
+  }
+}
+
+export default (req, res, next) => {
+  if (res.locals.webResourceId) {
+    return createProxyMiddleware(webResourceProxyOptions(res.locals.webResourceId))(req, res, next)
+  } else {
+    next()
+  }
 }

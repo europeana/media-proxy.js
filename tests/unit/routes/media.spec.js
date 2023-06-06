@@ -50,13 +50,41 @@ describe('@/routes/media.js', () => {
 
   describe('when there was no web resource hash in the request query', () => {
     it('redirects with 302 to the path including the hash, preserving query', async () => {
-      requestedDataSourceStub.returns({ find: async () => ({ edmRights: '/PD/', id: 'https://example.org/image/jpeg' }) })
+      requestedDataSourceStub.returns({ find: async () => ({ edmRights: '/PD/', id: 'https://example.org/image.jpeg' }) })
       const req = { params: { datasetId: '123', localId: 'abc' }, query: { disposition: 'inline' } }
       const res = { redirect: sinon.spy() }
 
       await mediaRoute(req, res)
 
-      expect(res.redirect.calledWith(302, '/media/123/abc/dea05b2e6152b57772872b63af7ccab1?disposition=inline')).toBe(true)
+      expect(res.redirect.calledWith(302, '/media/123/abc/d1299d035beb29c5b3b36e7f7c5c8610?disposition=inline')).toBe(true)
+    })
+  })
+
+  describe('when valid web resource hash is in the request query', () => {
+    const webResourceId = 'https://example.org/image.jpeg'
+    const req = {
+      params: { datasetId: '123', localId: 'abc', webResourceHash: 'd1299d035beb29c5b3b36e7f7c5c8610' },
+      query: { disposition: 'inline' }
+    }
+    const res = { locals: {}, redirect: sinon.spy() }
+    const next = sinon.spy()
+
+    beforeEach(() => {
+      requestedDataSourceStub.returns({
+        find: async () => ({ edmRights: '/PD/', id: webResourceId })
+      })
+    })
+
+    it('set web resource ID on res.locals', async () => {
+      await mediaRoute(req, res, next)
+
+      expect(res.locals.webResourceId).toBe(webResourceId)
+    })
+
+    it('calls next', async () => {
+      await mediaRoute(req, res, next)
+
+      expect(next.called).toBe(true)
     })
   })
 })

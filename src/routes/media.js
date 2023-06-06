@@ -1,3 +1,5 @@
+// TODO: move & rename to s'thing like middlewares/validate-media-request
+
 /**
  * Test items:
  * - 200 (after upstream redirect to media):
@@ -26,10 +28,9 @@
 
 import md5 from 'md5'
 
-import webResourceProxy from '../middlewares/web-resource-proxy.js'
 import dataSources from '../sources/index.js'
 
-const mediaRoute = async (req, res) => {
+const mediaRoute = async (req, res, next) => {
   let source
   try {
     source = dataSources.requested(req)
@@ -61,13 +62,13 @@ const mediaRoute = async (req, res) => {
     return res.redirect(302, redirectPath)
   }
 
-  // Try proxying it
-  webResourceProxy(webResource.id)(req, res)
+  res.locals.webResourceId = webResource.id
+  next()
 }
 
-export default async (req, res) => {
+export default async (req, res, next) => {
   try {
-    await mediaRoute(req, res)
+    await mediaRoute(req, res, next)
   } catch (error) {
     console.error(error.message)
 

@@ -9,7 +9,7 @@ app.use(middlewares.logging)
 app.use(middlewares.cors)
 
 app.get('/', routes.health)
-app.get('/media/:datasetId/:localId/:webResourceHash?', routes.media)
+app.get('/media/:datasetId/:localId/:webResourceHash?', routes.media, middlewares.webResourceProxy)
 app.get('/:datasetId/:localId', routes.legacy)
 
 export default app
