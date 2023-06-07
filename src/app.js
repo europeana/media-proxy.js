@@ -15,4 +15,6 @@ app.get('/', routes.health)
 app.get('/media/:datasetId/:localId/:webResourceHash?', routes.media(config), middlewares.webResourceProxy)
 app.get('/:datasetId/:localId', routes.legacy)
 
+app.use(middlewares.errors)
+
 export default app

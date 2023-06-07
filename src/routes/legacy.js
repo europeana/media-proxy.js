@@ -16,22 +16,26 @@ const redirectLocation = ({ datasetId, localId, webResourceHash, query } = {}) =
 }
 
 // Handles legacy media proxy URLs, redirecting to current ones
-export default async (req, res) => {
-  const redirectOptions = { ...req.params, query: { ...req.query } }
+export default async (req, res, next) => {
+  try {
+    const redirectOptions = { ...req.params, query: { ...req.query } }
 
-  if (redirectOptions.query.view) {
-    redirectOptions.webResourceHash = md5(redirectOptions.query.view)
-    delete redirectOptions.query.view
-  }
-
-  if (redirectOptions.query['api_url']) {
-    const apiUrl = new URL(redirectOptions.query['api_url'])
-    if (apiUrl.pathname === '/api') {
-      apiUrl.pathname = '/record'
+    if (redirectOptions.query.view) {
+      redirectOptions.webResourceHash = md5(redirectOptions.query.view)
+      delete redirectOptions.query.view
     }
-    redirectOptions.query.recordApiUrl = apiUrl.toString()
-    delete redirectOptions.query['api_url']
-  }
 
-  res.redirect(301, redirectLocation(redirectOptions))
+    if (redirectOptions.query['api_url']) {
+      const apiUrl = new URL(redirectOptions.query['api_url'])
+      if (apiUrl.pathname === '/api') {
+        apiUrl.pathname = '/record'
+      }
+      redirectOptions.query.recordApiUrl = apiUrl.toString()
+      delete redirectOptions.query['api_url']
+    }
+
+    res.redirect(301, redirectLocation(redirectOptions))
+  } catch (error) {
+    next(error)
+  }
 }

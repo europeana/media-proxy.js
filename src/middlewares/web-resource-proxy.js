@@ -111,9 +111,13 @@ export const webResourceProxyOptions = (webResourceId) => {
 }
 
 export default (req, res, next) => {
-  if (res.locals.webResourceId) {
-    return createProxyMiddleware(webResourceProxyOptions(res.locals.webResourceId))(req, res, next)
-  } else {
-    next()
+  try {
+    if (res.locals.webResourceId) {
+      return createProxyMiddleware(webResourceProxyOptions(res.locals.webResourceId))(req, res, next)
+    } else {
+      next()
+    }
+  } catch (err) {
+    next(err)
   }
 }

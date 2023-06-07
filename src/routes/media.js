@@ -32,58 +32,40 @@ import dataSources from '../sources/index.js'
 
 let config
 
-const mediaRoute = async (req, res, next) => {
-  let source
-  try {
-    source = dataSources.requested(req, config)
-  } catch (error) {
-    if (error.message === 'Unauthorised API URL') {
-      return res.sendStatus(403)
-    } else {
-      throw (error)
-    }
-  }
-
-  const itemId = `/${req.params.datasetId}/${req.params.localId}`
-
-  const webResource = await source.find(itemId, req.params.webResourceHash)
-
-  if (!webResource) {
-    // No isShownBy and no hash, or invalid hash
-    return res.sendStatus(404)
-  } else if (webResource.edmRights.includes('/InC/')) {
-    // In copyright, proxying forbidden
-    return res.sendStatus(403)
-  } else if (!req.params.webResourceHash) {
-    // Redirect to the URL with the hash, preserving the query
-    let redirectPath = `/media/${req.params.datasetId}/${req.params.localId}/${md5(webResource.id)}`
-    const query = new URLSearchParams(req.query).toString()
-    if (query !== '') {
-      redirectPath = `${redirectPath}?${query}`
-    }
-    return res.redirect(302, redirectPath)
-  }
-
-  res.locals.webResourceId = webResource.id
-  next()
-}
-
-export default (options) => async (req, res, next) => {
+export default (options) => {
   config = options
 
-  try {
-    await mediaRoute(req, res, next)
-  } catch (error) {
-    console.error(error.message)
+  return async (req, res, next) => {
+    try {
+      const source = dataSources.requested(req, config)
 
-    let errorStatus
-    // TODO: log error message to APM?
-    // let errorMessage
-    if (error.response) {
-      errorStatus = error.response.status
-      // errorMessage = error.response.data.error
+      const itemId = `/${req.params.datasetId}/${req.params.localId}`
+
+      const webResource = await source.find(itemId, req.params.webResourceHash)
+
+      if (!webResource) {
+        // No isShownBy and no hash, or invalid hash
+        return res.sendStatus(404)
+      } else if (webResource.edmRights.includes('/InC/')) {
+        // In copyright, proxying forbidden
+        return res.sendStatus(403)
+      } else if (!req.params.webResourceHash) {
+        // Redirect to the URL with the hash, preserving the query
+        let redirectPath = `/media/${req.params.datasetId}/${req.params.localId}/${md5(webResource.id)}`
+        const query = new URLSearchParams(req.query).toString()
+        if (query !== '') {
+          redirectPath = `${redirectPath}?${query}`
+        }
+        return res.redirect(302, redirectPath)
+      }
+
+      res.locals.webResourceId = webResource.id
+      next()
+    } catch (err) {
+      if (err.message === 'Unauthorised API URL') {
+        err.status = 403
+      }
+      next(err)
     }
-
-    res.sendStatus(errorStatus || 502)
   }
 }
