@@ -10,7 +10,8 @@ export default class RecordApiSource {
 
   constructor (config, apiUrl) {
     this.#config = config
-    this.apiUrl = apiUrl || this.#config.apiUrl
+    this.validateApiUrlPermitted(apiUrl)
+    this.#apiUrl = apiUrl || this.#config.apiUrl
     this.#axiosInstance = axios.create({
       baseURL: this.#apiUrl,
       httpAgent: new http.Agent({ keepAlive: true }),
@@ -22,15 +23,14 @@ export default class RecordApiSource {
     })
   }
 
-  set apiUrl (apiUrl) {
-    if (!this.permittedApiUrls.includes(apiUrl)) {
-      throw new Error('Unauthorised API URL')
+  validateApiUrlPermitted (apiUrl) {
+    if (apiUrl && !this.permittedApiUrls.includes(apiUrl)) {
+      throw new Error(`Unauthorised API URL: "${apiUrl}"`)
     }
-    this.#apiUrl = apiUrl
   }
 
   get permittedApiUrls () {
-    return [this.#apiUrl].concat(this.#config.permittedApiUrls || [])
+    return [this.#config.apiUrl].concat(this.#config.permittedApiUrls || [])
   }
 
   async find (itemId, webResourceHash) {
