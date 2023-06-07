@@ -1,7 +1,7 @@
 export default (err, req, res, next) => {
   if (err) {
     console.error(err.message)
-    if (!process.NODE_ENV === 'production') {
+    if (process.NODE_ENV !== 'production') {
       console.error(err.stack)
     }
 
