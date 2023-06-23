@@ -37,32 +37,6 @@ describe('@/routes/media.js', () => {
     })
   })
 
-  describe('when web resource has In Copyright edm:rights', () => {
-    describe('and downloading', () => {
-      it('sends status 403', async () => {
-        requestedDataSourceStub.returns({ find: async () => ({ edmRights: '/InC/', id: 'https://example.org/image.jpeg' }) })
-        const req = { params: {} }
-        const res = { sendStatus: sinon.spy() }
-
-        await mediaRoute({})(req, res)
-
-        expect(res.sendStatus.calledWith(403)).toBe(true)
-      })
-    })
-
-    describe('and displaying inline', () => {
-      it('does not send status 403', async () => {
-        requestedDataSourceStub.returns({ find: async () => ({ edmRights: '/InC/', id: 'https://example.org/image.jpeg' }) })
-        const req = { params: {}, query: { disposition: 'inline' } }
-        const res = { redirect: sinon.spy(), sendStatus: sinon.spy() }
-
-        await mediaRoute({})(req, res)
-
-        expect(res.sendStatus.calledWith(403)).toBe(false)
-      })
-    })
-  })
-
   describe('when there was no web resource hash in the request query', () => {
     it('redirects with 302 to the path including the hash, preserving query', async () => {
       requestedDataSourceStub.returns({ find: async () => ({ edmRights: '/PD/', id: 'https://example.org/image.jpeg' }) })

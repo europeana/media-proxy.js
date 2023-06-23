@@ -157,23 +157,5 @@ describe('@/sources/record-api.js', () => {
         })
       })
     })
-
-    describe('edmRights', () => {
-      it('favours that on the web resource', async () => {
-        axiosInstanceStub.returns(fixtures.recordApiResponse)
-
-        const webResource = await recordApiSource.find(fixtures.itemId, fixtures.edmHasViewHash)
-
-        expect(webResource.edmRights).toBe(fixtures.webResourceEdmRights)
-      })
-
-      it('falls back to that on the aggregation', async () => {
-        axiosInstanceStub.returns(fixtures.recordApiResponse)
-
-        const webResource = await recordApiSource.find(fixtures.itemId, fixtures.edmIsShownByHash)
-
-        expect(webResource.edmRights).toBe(fixtures.edmRights)
-      })
-    })
   })
 })

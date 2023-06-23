@@ -45,16 +45,7 @@ export default class MongoSource {
       return null
     }
 
-    let edmRights = aggregation.edmRights.def[0]
-
-    const webResourceDoc = await this.db.collection('WebResource')
-      .findOne({ about: webResourceId })
-    if (webResourceDoc?.webResourceEdmRights) {
-      edmRights = webResourceDoc.webResourceEdmRights.def[0]
-    }
-
     return {
-      edmRights,
       id: webResourceId
     }
   }

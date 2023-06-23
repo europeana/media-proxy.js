@@ -62,16 +62,7 @@ export default class RecordApiSource {
       return null
     }
 
-    let edmRights = providerAggregation.edmRights.def[0]
-
-    const webResource = providerAggregation.webResources
-      .find((wr) => wr.about === webResourceId)
-    if (webResource.webResourceEdmRights) {
-      edmRights = webResource.webResourceEdmRights.def[0]
-    }
-
     return {
-      edmRights,
       id: webResourceId
     }
   }

@@ -59,14 +59,6 @@ describe('@/sources/mongodb.js', () => {
       expect(findOneAggregationStub.calledWith({ about: fixtures.providerAggregationId })).toBe(true)
     })
 
-    it('queries the WebResource collection for the web resource', async () => {
-      const mongoSource = new MongoSource({}, new MongoClientStub)
-
-      await mongoSource.find(fixtures.itemId)
-
-      expect(findOneWebResourceStub.calledWith({ about: fixtures.edmIsShownById })).toBe(true)
-    })
-
     describe('web resource selection', () => {
       describe('when no web resource hash is supplied', () => {
         it('selects the edm:isShownBy', async () => {
@@ -105,28 +97,6 @@ describe('@/sources/mongodb.js', () => {
           const webResource = await mongoSource.find(fixtures.itemId, fixtures.edmHasViewHash.slice(1))
 
           expect(webResource).toBeNull()
-        })
-      })
-    })
-
-    describe('edm:rights selection', () => {
-      describe('when the web resource has its own edm:rights', () => {
-        it('selects the web resource edm:rights', async () => {
-          const mongoSource = new MongoSource({}, new MongoClientStub)
-
-          const webResource = await mongoSource.find(fixtures.itemId, fixtures.edmHasViewHash)
-
-          expect(webResource.edmRights).toBe(fixtures.webResourceEdmRights)
-        })
-      })
-
-      describe('when the web resource does not have its own edm:rights', () => {
-        it('selects the aggregation edm:rights', async () => {
-          const mongoSource = new MongoSource({}, new MongoClientStub)
-
-          const webResource = await mongoSource.find(fixtures.itemId, fixtures.edmIsShownByHash)
-
-          expect(webResource.edmRights).toBe(fixtures.edmRights)
         })
       })
     })
