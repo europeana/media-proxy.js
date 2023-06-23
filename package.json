@@ -56,6 +56,6 @@
     "test:coverage:ci": "npm run test -- --coverage --maxWorkers 2",
     "version": "node bin/sonar-project-version.js && git add sonar-project.properties"
   },
-  "version": "0.0.1",
+  "version": "0.1.0",
   "type": "module"
 }
