@@ -38,14 +38,28 @@ describe('@/routes/media.js', () => {
   })
 
   describe('when web resource has In Copyright edm:rights', () => {
-    it('sends status 403', async () => {
-      requestedDataSourceStub.returns({ find: async () => ({ edmRights: '/InC/' }) })
-      const req = { params: {} }
-      const res = { sendStatus: sinon.spy() }
+    describe('and downloading', () => {
+      it('sends status 403', async () => {
+        requestedDataSourceStub.returns({ find: async () => ({ edmRights: '/InC/', id: 'https://example.org/image.jpeg' }) })
+        const req = { params: {} }
+        const res = { sendStatus: sinon.spy() }
 
-      await mediaRoute({})(req, res)
+        await mediaRoute({})(req, res)
 
-      expect(res.sendStatus.calledWith(403)).toBe(true)
+        expect(res.sendStatus.calledWith(403)).toBe(true)
+      })
+    })
+
+    describe('and displaying inline', () => {
+      it('does not send status 403', async () => {
+        requestedDataSourceStub.returns({ find: async () => ({ edmRights: '/InC/', id: 'https://example.org/image.jpeg' }) })
+        const req = { params: {}, query: { disposition: 'inline' } }
+        const res = { redirect: sinon.spy(), sendStatus: sinon.spy() }
+
+        await mediaRoute({})(req, res)
+
+        expect(res.sendStatus.calledWith(403)).toBe(false)
+      })
     })
   })
 

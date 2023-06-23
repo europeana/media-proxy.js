@@ -80,6 +80,7 @@ const onProxyRes = (webResourceId) => (proxyRes, req, res) => {
   }
 }
 
+// TODO: should this throw the error up, so it gets handled by errors.js?
 const onError = (err, req, res) => {
   // TODO: log error message to APM?
   // let errorMessage = 'Bad Gateway'
@@ -113,7 +114,8 @@ export const webResourceProxyOptions = (webResourceId) => {
 export default (req, res, next) => {
   try {
     if (res.locals.webResourceId) {
-      return createProxyMiddleware(webResourceProxyOptions(res.locals.webResourceId))(req, res, next)
+      const options = webResourceProxyOptions(res.locals.webResourceId)
+      return createProxyMiddleware(options)(req, res, next)
     } else {
       next()
     }

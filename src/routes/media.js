@@ -2,6 +2,7 @@
 
 import md5 from 'md5'
 
+import { CONTENT_DISPOSITIONS } from '../lib/constants.js'
 import dataSources from '../sources/index.js'
 
 let config
@@ -16,12 +17,14 @@ export default (options) => {
       const itemId = `/${req.params.datasetId}/${req.params.localId}`
 
       const webResource = await source.find(itemId, req.params.webResourceHash)
+      const downloading = (req.query?.disposition !== CONTENT_DISPOSITIONS.INLINE)
 
       if (!webResource) {
         // No isShownBy and no hash, or invalid hash
         return res.sendStatus(404)
-      } else if (webResource.edmRights.includes('/InC/')) {
-        // In copyright, proxying forbidden
+      } else if (downloading && webResource.edmRights.includes('/InC/')) {
+        // If media is in copyright, proxying _for download_ is forbidden, (but
+        // inline is permitted)
         return res.sendStatus(403)
       } else if (!req.params.webResourceHash) {
         // Redirect to the URL with the hash, preserving the query
