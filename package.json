@@ -35,7 +35,8 @@
     "nodemon": "^2.0.20",
     "rollup": "^3.14.0",
     "serve": "^14.2.0",
-    "sinon": "^15.0.3"
+    "sinon": "^15.0.3",
+    "yaml": "^2.3.1"
   },
   "engines": {
     "node": "^18"
@@ -54,7 +55,7 @@
     "test": "node --expose-gc --no-compilation-cache --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.js",
     "test:coverage": "npm run test -- --coverage",
     "test:coverage:ci": "npm run test -- --coverage --maxWorkers 2",
-    "version": "node bin/sonar-project-version.js && git add sonar-project.properties"
+    "version": "node bin/openapi-version.js && node bin/sonar-project-version.js && git add docs/api && git add sonar-project.properties"
   },
   "version": "0.1.0",
   "type": "module"
