@@ -126,6 +126,7 @@ paths:
       - $ref: '#/components/parameters/datasetId'
       - $ref: '#/components/parameters/localId'
       - $ref: '#/components/parameters/recordApiUrl'
+      - $ref: '#/components/parameters/disposition'
     get:
       tags:
         - media
@@ -268,10 +269,20 @@ paths:
       - $ref: '#/components/parameters/localId'
       - $ref: '#/components/parameters/legacyRecordApiUrl'
       - $ref: '#/components/parameters/legacyView'
+      - $ref: '#/components/parameters/disposition'
     get:
       tags:
         - legacy
       summary: Redirect legacy media proxy URLs to current equivalents
+      description: |
+        Legacy media proxy URLs are of the format
+        `/{datasetId}/{localId}?view={webResourceUrl}&apiUrl={recordApiUrl}`.
+
+        1. The URL in `webResourceUrl` will be hashed to get `webResourceHash`
+        1. The Record API URL in `apiUrl` will be moved to `recordApiUrl`
+        1. Any other URL query parameters will be preserved
+        1. The request will then be `301` redirected, e.g. to
+           `/media/{datasetId}/{localId}/{webResourceHash}?recordApiUrl={recordApiUrl}`
       responses:
         '301':
           description: Redirect
