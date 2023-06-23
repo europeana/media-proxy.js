@@ -29,6 +29,10 @@ export default class MongoSource {
     const aggregation = await this.db.collection('Aggregation')
       .findOne({ about: `/aggregation/provider${itemId}` })
 
+    if (!aggregation) {
+      return null
+    }
+
     let webResourceId
     if (webResourceHash) {
       webResourceId = [aggregation.edmIsShownBy].concat(aggregation.hasView)
