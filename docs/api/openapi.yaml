@@ -6,10 +6,6 @@ info:
   description: |
     Micro-service for proxying Europeana `edm:isShownBy` and `edm:hasView` web
     resources from providers' websites.
-
-    ## TODO
-    * docs:
-      * CORS
   license:
     name: EUPL-1.2
     url: https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
