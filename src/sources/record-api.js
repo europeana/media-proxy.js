@@ -6,14 +6,14 @@ import md5 from 'md5'
 export default class RecordApiSource {
   #config = {}
   #axiosInstance
-  #apiUrl
+  apiUrl
 
   constructor (config, apiUrl) {
     this.#config = config
     this.validateApiUrlPermitted(apiUrl)
-    this.#apiUrl = apiUrl || this.#config.apiUrl
+    this.apiUrl = this.apiUrlWithRecordSuffix(apiUrl || this.#config.apiUrl)
     this.#axiosInstance = axios.create({
-      baseURL: this.#apiUrl,
+      baseURL: this.apiUrl,
       httpAgent: new http.Agent({ keepAlive: true }),
       httpsAgent: new https.Agent({ keepAlive: true }),
       params: {
@@ -21,6 +21,10 @@ export default class RecordApiSource {
       },
       timeout: 10000
     })
+  }
+
+  apiUrlWithRecordSuffix (apiUrl) {
+    return apiUrl.endsWith('/record') ? apiUrl : `${apiUrl}/record`
   }
 
   validateApiUrlPermitted (apiUrl) {

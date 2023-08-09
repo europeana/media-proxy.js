@@ -7,7 +7,11 @@ const axiosCreateStub = sinon.stub(axios, 'create').returns(axiosInstanceStub)
 const config = {
   apiKey: 'API_KEY',
   apiUrl: 'https://api.example.org/record',
-  permittedApiUrls: ['https://api.example.org/record', 'https://api2.example.org/record']
+  permittedApiUrls: [
+    'https://api.example.org/record',
+    'https://api2.example.org/record',
+    'https://api3.example.org/api/v2'
+  ]
 }
 
 import RecordApiSource from '@/sources/record-api.js'
@@ -78,6 +82,14 @@ describe('@/sources/record-api.js', () => {
           },
           timeout: 10000
         })).toBe(true)
+      })
+
+      describe('without /record suffix', () => {
+        it('appends /record suffix', () => {
+          const source = new RecordApiSource(config, config.permittedApiUrls[2])
+
+          expect(source.apiUrl).toBe(`${config.permittedApiUrls[2]}/record`)
+        })
       })
     })
 
