@@ -71,7 +71,9 @@ components:
     recordApiUrl:
       name: recordApiUrl
       in: query
-      description: Europeana Record API URL for web resource resolution & validation
+      description: |
+        Europeana Record API URL for web resource resolution & validation. If
+        it does not end with /record, that will be appended.
       schema:
         type: string
     webResourceHash:
@@ -293,6 +295,8 @@ paths:
                 example: Found. Redirecting to
                   /media/2020601/https___1914_1918_europeana_eu_contributions_14524
 servers:
+  - url: https://proxy.europeana.eu
+    description: Production server
   - url: https://media-proxy-js.test.eanadev.org
     description: Test server
   - url: http://localhost:3000

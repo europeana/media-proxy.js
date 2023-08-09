@@ -9,7 +9,9 @@ describe('@/sources/index.js', () => {
         app: {
           dataSource: 'record-api'
         },
-        europeana: {}
+        europeana: {
+          apiUrl: 'https://api.example.org/record'
+        }
       }
 
       it('returns an instance of RecordApiSource', () => {
