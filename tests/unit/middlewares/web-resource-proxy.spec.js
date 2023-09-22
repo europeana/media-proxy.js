@@ -52,6 +52,14 @@ describe('@/middlewares/web-resource-proxy.js', () => {
         expect(res.setHeader.calledWith('x-europeana-web-resource', fixtures.webResourceId)).toBe(true)
       })
 
+      it('encodes characters not permitted in HTTP header values', () => {
+        const proxyOptions = webResourceProxyOptions('https://www.example.org/Težak.jpg')
+
+        proxyOptions.onProxyReq(proxyReq, req, res)
+
+        expect(res.setHeader.calledWith('x-europeana-web-resource', 'https://www.example.org/Te%C5%BEak.jpg')).toBe(true)
+      })
+
       it('sets timeout handler on proxied request', () => {
         proxyOptions.onProxyReq(proxyReq, req, res)
 

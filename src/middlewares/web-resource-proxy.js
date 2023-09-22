@@ -42,7 +42,7 @@ const normaliseProxyResHeaders = (proxyRes) => {
 
 const setCustomResHeaders = (webResourceId, res) => {
   // Set custom x-europeana-web-resource header to URL of web resource
-  res.setHeader(HTTP_HEADERS.X_EUROPEANA_WEB_RESOURCE, webResourceId)
+  res.setHeader(HTTP_HEADERS.X_EUROPEANA_WEB_RESOURCE, new URL(webResourceId).toString())
 }
 
 // Custom timeout handling to ensure empty responses aren't sent by http-proxy
