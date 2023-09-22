@@ -56,52 +56,48 @@ const handleTimeout = (req, res) => {
   })
 }
 
-const onProxyReq = (webResourceId) => (proxyReq, req, res) => {
-  setCustomResHeaders(webResourceId, res)
-  handleTimeout(proxyReq, res)
-  handleTimeout(req, res)
-}
-
-const onProxyRes = (webResourceId) => (proxyRes, req, res) => {
-  normaliseProxyResHeaders(proxyRes)
-
-  if (proxyRes.statusCode > 399) {
-    // Upstream error. Normalise to plain-text response.
-    return res.sendStatus(proxyRes.statusCode)
-  } else if (mime.extension(proxyRes.headers[HTTP_HEADERS.CONTENT_TYPE]) === 'html') {
-    // HTML document. Redirect to it.
-    return res.redirect(302, webResourceId)
-  } else {
-    // Proxy everything else.
-    res.setHeader(HTTP_HEADERS.CONTENT_DISPOSITION, contentDisposition({
-      contentType: proxyRes.headers[HTTP_HEADERS.CONTENT_TYPE],
-      req
-    }))
+const onProxyReq = (webResourceId, next) => (proxyReq, req, res) => {
+  try {
+    handleTimeout(proxyReq, res)
+    handleTimeout(req, res)
+  } catch (err) {
+    next(err)
   }
 }
 
-// TODO: should this throw the error up, so it gets handled by errors.js?
-const onError = (err, req, res) => {
-  // TODO: log error message to APM?
-  // let errorMessage = 'Bad Gateway'
-  //
-  // if (err.code === 'CERT_HAS_EXPIRED') {
-  //   errorMessage = err.message
-  // }
+const onProxyRes = (webResourceId, next) => (proxyRes, req, res) => {
+  try {
+    normaliseProxyResHeaders(proxyRes)
+    setCustomResHeaders(webResourceId, res)
 
-  return res.sendStatus(502)
+    if (proxyRes.statusCode > 399) {
+      // Upstream error. Normalise to plain-text response.
+      return res.sendStatus(proxyRes.statusCode)
+    } else if (mime.extension(proxyRes.headers[HTTP_HEADERS.CONTENT_TYPE]) === 'html') {
+      // HTML document. Redirect to it.
+      return res.redirect(302, webResourceId)
+    } else {
+      // Proxy everything else.
+      res.setHeader(HTTP_HEADERS.CONTENT_DISPOSITION, contentDisposition({
+        contentType: proxyRes.headers[HTTP_HEADERS.CONTENT_TYPE],
+        req
+      }))
+    }
+  } catch (err) {
+    next(err)
+  }
 }
 
-export const webResourceProxyOptions = (webResourceId) => {
+export const webResourceProxyOptions = (webResourceId, next) => {
   const webResourceUrl = new URL(webResourceId)
 
   return {
     changeOrigin: true,
     followRedirects: true,
     logLevel: process.NODE_ENV === 'production' ? 'error' : 'info',
-    onError,
-    onProxyReq: onProxyReq(webResourceId),
-    onProxyRes: onProxyRes(webResourceId),
+    onError: next,
+    onProxyReq: onProxyReq(webResourceId, next),
+    onProxyRes: onProxyRes(webResourceId, next),
     pathRewrite: () => `${webResourceUrl.pathname}${webResourceUrl.search}`,
     // NOTE: do not use this, as it results in empty responses
     // proxyTimeout: 10000,
@@ -111,11 +107,11 @@ export const webResourceProxyOptions = (webResourceId) => {
   }
 }
 
-export default (req, res, next) => {
+export default async (req, res, next) => {
   try {
     if (res.locals.webResourceId) {
-      const options = webResourceProxyOptions(res.locals.webResourceId)
-      return createProxyMiddleware(options)(req, res, next)
+      const options = webResourceProxyOptions(res.locals.webResourceId, next)
+      await createProxyMiddleware(options)(req, res, next)
     } else {
       next()
     }
