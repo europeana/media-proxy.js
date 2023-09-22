@@ -35,7 +35,8 @@ describe('@/middlewares/web-resource-proxy.js', () => {
     })
 
     describe('onProxyReq', () => {
-      const proxyOptions = webResourceProxyOptions(fixtures.webResourceId)
+      const next = sinon.spy()
+      const proxyOptions = webResourceProxyOptions(fixtures.webResourceId, next)
 
       let proxyReqTimeoutCallback
       const proxyReqSetTimeoutStub = sinon.stub().callsFake((interval, callback) => proxyReqTimeoutCallback = callback)
@@ -64,10 +65,20 @@ describe('@/middlewares/web-resource-proxy.js', () => {
         expect(req.abort.called).toBe(true)
         expect(res.sendStatus.calledWith(504)).toBe(true)
       })
+
+      it('passes error to next middleware', () => {
+        const err = new Error()
+        const proxyReq = { setTimeout: sinon.stub().throws(err) }
+
+        proxyOptions.onProxyReq(proxyReq, req, res)
+
+        expect(next.calledWith(err)).toBe(true)
+      })
     })
 
     describe('onProxyRes', () => {
-      const proxyOptions = webResourceProxyOptions(fixtures.webResourceId)
+      const next = sinon.spy()
+      const proxyOptions = webResourceProxyOptions(fixtures.webResourceId, next)
       const proxyRes = { headers: {} }
       const res = { redirect: sinon.spy(), sendStatus: sinon.spy(), setHeader: sinon.spy() }
       const req = { params: {}, query: {} }
@@ -172,6 +183,15 @@ describe('@/middlewares/web-resource-proxy.js', () => {
             })
           })
         })
+      })
+
+      it('passes error to next middleware', () => {
+        const err = new Error()
+        const res = { setHeader: sinon.stub().throws(err) }
+
+        proxyOptions.onProxyRes(proxyRes, req, res)
+
+        expect(next.calledWith(err)).toBe(true)
       })
     })
 
