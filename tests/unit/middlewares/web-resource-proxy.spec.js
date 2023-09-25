@@ -23,18 +23,20 @@ describe('@/middlewares/web-resource-proxy.js', () => {
     })
 
     describe('onError', () => {
-      it('sends status code 502', () => {
-        const proxyOptions = webResourceProxyOptions(fixtures.webResourceId)
-        const res = { sendStatus: sinon.spy() }
+      it('calls next', () => {
+        const next = sinon.spy()
+        const proxyOptions = webResourceProxyOptions(fixtures.webResourceId, next)
+        const err = new Error()
 
-        proxyOptions.onError(null, null, res)
+        proxyOptions.onError(err)
 
-        expect(res.sendStatus.calledWith(502)).toBe(true)
+        expect(next.calledWith(err)).toBe(true)
       })
     })
 
     describe('onProxyReq', () => {
-      const proxyOptions = webResourceProxyOptions(fixtures.webResourceId)
+      const next = sinon.spy()
+      const proxyOptions = webResourceProxyOptions(fixtures.webResourceId, next)
 
       let proxyReqTimeoutCallback
       const proxyReqSetTimeoutStub = sinon.stub().callsFake((interval, callback) => proxyReqTimeoutCallback = callback)
@@ -44,21 +46,7 @@ describe('@/middlewares/web-resource-proxy.js', () => {
       const reqSetTimeoutStub = sinon.stub().callsFake((interval, callback) => reqTimeoutCallback = callback)
       const req = { abort: sinon.spy(), setTimeout: reqSetTimeoutStub }
 
-      const res = { sendStatus: sinon.spy(), setHeader: sinon.spy() }
-
-      it('sets x-europeana-web-resource response header to web resource ID', () => {
-        proxyOptions.onProxyReq(proxyReq, req, res)
-
-        expect(res.setHeader.calledWith('x-europeana-web-resource', fixtures.webResourceId)).toBe(true)
-      })
-
-      it('encodes characters not permitted in HTTP header values', () => {
-        const proxyOptions = webResourceProxyOptions('https://www.example.org/Težak.jpg')
-
-        proxyOptions.onProxyReq(proxyReq, req, res)
-
-        expect(res.setHeader.calledWith('x-europeana-web-resource', 'https://www.example.org/Te%C5%BEak.jpg')).toBe(true)
-      })
+      const res = { sendStatus: sinon.spy() }
 
       it('sets timeout handler on proxied request', () => {
         proxyOptions.onProxyReq(proxyReq, req, res)
@@ -77,10 +65,21 @@ describe('@/middlewares/web-resource-proxy.js', () => {
         expect(req.abort.called).toBe(true)
         expect(res.sendStatus.calledWith(504)).toBe(true)
       })
+
+      it('passes error to next middleware', () => {
+        const err = new Error()
+        const proxyReq = { setTimeout: sinon.stub().throws(err) }
+
+        proxyOptions.onProxyReq(proxyReq, req, res)
+
+        expect(next.calledWith(err)).toBe(true)
+      })
     })
 
     describe('onProxyRes', () => {
-      const proxyOptions = webResourceProxyOptions(fixtures.webResourceId)
+      const next = sinon.spy()
+      const proxyOptions = webResourceProxyOptions(fixtures.webResourceId, next)
+      const proxyRes = { headers: {} }
       const res = { redirect: sinon.spy(), sendStatus: sinon.spy(), setHeader: sinon.spy() }
       const req = { params: {}, query: {} }
 
@@ -117,6 +116,22 @@ describe('@/middlewares/web-resource-proxy.js', () => {
           proxyOptions.onProxyRes(proxyRes, req, res)
 
           expect(proxyRes.headers['content-type']).toBe('application/octet-stream')
+        })
+      })
+
+      describe('custom x-europeana-web-resource header', () => {
+        it('is set to web resource ID', () => {
+          proxyOptions.onProxyRes(proxyRes, req, res)
+
+          expect(res.setHeader.calledWith('x-europeana-web-resource', fixtures.webResourceId)).toBe(true)
+        })
+
+        it('encodes characters not permitted in HTTP header values', () => {
+          const proxyOptions = webResourceProxyOptions('https://www.example.org/Težak.jpg')
+
+          proxyOptions.onProxyRes(proxyRes, req, res)
+
+          expect(res.setHeader.calledWith('x-europeana-web-resource', 'https://www.example.org/Te%C5%BEak.jpg')).toBe(true)
         })
       })
 
@@ -168,6 +183,15 @@ describe('@/middlewares/web-resource-proxy.js', () => {
             })
           })
         })
+      })
+
+      it('passes error to next middleware', () => {
+        const err = new Error()
+        const res = { setHeader: sinon.stub().throws(err) }
+
+        proxyOptions.onProxyRes(proxyRes, req, res)
+
+        expect(next.calledWith(err)).toBe(true)
       })
     })
 
