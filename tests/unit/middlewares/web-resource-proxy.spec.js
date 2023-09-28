@@ -40,13 +40,19 @@ describe('@/middlewares/web-resource-proxy.js', () => {
 
       let proxyReqTimeoutCallback
       const proxyReqSetTimeoutStub = sinon.stub().callsFake((interval, callback) => proxyReqTimeoutCallback = callback)
-      const proxyReq = { abort: sinon.spy(), setTimeout: proxyReqSetTimeoutStub }
+      const proxyReq = { abort: sinon.spy(), removeHeader: sinon.spy(), setTimeout: proxyReqSetTimeoutStub }
 
       let reqTimeoutCallback
       const reqSetTimeoutStub = sinon.stub().callsFake((interval, callback) => reqTimeoutCallback = callback)
       const req = { abort: sinon.spy(), setTimeout: reqSetTimeoutStub }
 
       const res = { sendStatus: sinon.spy() }
+
+      it('removes origin header from proxied request', () => {
+        proxyOptions.onProxyReq(proxyReq, req, res)
+
+        expect(proxyReq.removeHeader.calledWith('origin')).toBe(true)
+      })
 
       it('sets timeout handler on proxied request', () => {
         proxyOptions.onProxyReq(proxyReq, req, res)
@@ -68,7 +74,7 @@ describe('@/middlewares/web-resource-proxy.js', () => {
 
       it('passes error to next middleware', () => {
         const err = new Error()
-        const proxyReq = { setTimeout: sinon.stub().throws(err) }
+        const proxyReq = { removeHeader: sinon.spy(), setTimeout: sinon.stub().throws(err) }
 
         proxyOptions.onProxyReq(proxyReq, req, res)
 
