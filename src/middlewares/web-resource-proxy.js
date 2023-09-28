@@ -26,6 +26,10 @@ const contentDisposition = ({ contentType, req } = {}) => {
   return `${attachmentOrInline}; filename="${filename}"`
 }
 
+const filterProxyReqHeaders = (proxyReq, req) => {
+  proxyReq.removeHeader('origin')
+}
+
 const normaliseProxyResHeaders = (proxyRes) => {
   // Delete any headers we don't want to proxy.
   for (const header in proxyRes.headers) {
@@ -58,6 +62,7 @@ const handleTimeout = (req, res) => {
 
 const onProxyReq = (webResourceId, next) => (proxyReq, req, res) => {
   try {
+    filterProxyReqHeaders(proxyReq, req)
     handleTimeout(proxyReq, res)
     handleTimeout(req, res)
   } catch (err) {
