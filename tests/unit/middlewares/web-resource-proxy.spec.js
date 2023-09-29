@@ -48,12 +48,6 @@ describe('@/middlewares/web-resource-proxy.js', () => {
 
       const res = { sendStatus: sinon.spy() }
 
-      it('removes origin header from proxied request', () => {
-        proxyOptions.onProxyReq(proxyReq, req, res)
-
-        expect(proxyReq.removeHeader.calledWith('origin')).toBe(true)
-      })
-
       it('sets timeout handler on proxied request', () => {
         proxyOptions.onProxyReq(proxyReq, req, res)
 

@@ -26,8 +26,9 @@ const contentDisposition = ({ contentType, req } = {}) => {
   return `${attachmentOrInline}; filename="${filename}"`
 }
 
-const filterProxyReqHeaders = (proxyReq) => {
-  proxyReq.removeHeader('origin')
+const filterReqHeaders = (req) => {
+  delete req.headers.cookie
+  delete req.headers.origin
 }
 
 const normaliseProxyResHeaders = (proxyRes) => {
@@ -60,9 +61,10 @@ const handleTimeout = (req, res) => {
   })
 }
 
+// WARN: do not modify headers in this handler, as it may be called again on
+//       upstream redirects, resulting in errors.
 const onProxyReq = (webResourceId, next) => (proxyReq, req, res) => {
   try {
-    filterProxyReqHeaders(proxyReq)
     handleTimeout(proxyReq, res)
     handleTimeout(req, res)
   } catch (err) {
@@ -115,6 +117,8 @@ export const webResourceProxyOptions = (webResourceId, next) => {
 export default async (req, res, next) => {
   try {
     if (res.locals.webResourceId) {
+      filterReqHeaders(req)
+
       const options = webResourceProxyOptions(res.locals.webResourceId, next)
       await createProxyMiddleware(options)(req, res, next)
     } else {
