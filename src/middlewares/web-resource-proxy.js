@@ -3,7 +3,17 @@ import mime from 'mime-types'
 
 import { CONTENT_DISPOSITIONS, CONTENT_TYPES, HTTP_HEADERS } from '../lib/constants.js'
 
-const headersToProxy = [
+const requestHeadersToProxy = [
+  HTTP_HEADERS.ACCEPT_ENCODING,
+  HTTP_HEADERS.ACCEPT_LANGUAGE,
+  HTTP_HEADERS.ACCEPT,
+  HTTP_HEADERS.IF_MATCH,
+  HTTP_HEADERS.IF_MODIFIED_SINCE,
+  HTTP_HEADERS.REFERER,
+  HTTP_HEADERS.USER_AGENT
+]
+
+const responseHeadersToProxy = [
   HTTP_HEADERS.ACCEPT_RANGES,
   HTTP_HEADERS.CACHE_CONTROL,
   HTTP_HEADERS.CONTENT_LENGTH,
@@ -27,18 +37,24 @@ const contentDisposition = ({ contentType, req } = {}) => {
 }
 
 const filterReqHeaders = (req) => {
-  delete req.headers.cookie
-  delete req.headers.origin
+  // Delete any request headers we don't want to proxy.
+  for (const header in req.headers) {
+    if (!requestHeadersToProxy.includes(header)) {
+      delete req.headers[header]
+    }
+  }
 }
 
-const normaliseProxyResHeaders = (proxyRes) => {
-  // Delete any headers we don't want to proxy.
+const filterProxyResHeaders = (proxyRes) => {
+  // Delete any response headers we don't want to proxy.
   for (const header in proxyRes.headers) {
-    if (!headersToProxy.includes(header)) {
+    if (!responseHeadersToProxy.includes(header)) {
       delete proxyRes.headers[header]
     }
   }
+}
 
+const normaliseProxyResHeaders = (proxyRes) => {
   // Default content-type to application/octet-stream, if not present
   if (!proxyRes.headers[HTTP_HEADERS.CONTENT_TYPE]) {
     proxyRes.headers[HTTP_HEADERS.CONTENT_TYPE] = CONTENT_TYPES.APPLICATION_OCTET_STREAM
@@ -74,6 +90,7 @@ const onProxyReq = (webResourceId, next) => (proxyReq, req, res) => {
 
 const onProxyRes = (webResourceId, next) => (proxyRes, req, res) => {
   try {
+    filterProxyResHeaders(proxyRes)
     normaliseProxyResHeaders(proxyRes)
     setCustomResHeaders(webResourceId, res)
 
