@@ -188,7 +188,18 @@ paths:
            `edm:isShownBy` or `edm:hasView` properties, whose URL when MD5-hashed
            matches the path parameter `{webResourceHash}`. If no such web resource
            is found, responds with status code 404.
-        1. Starts proxying the web resource from the provider's site to the client. 1. If the web resource is detected to be an HTML document, stops proxying
+        1. Removes all but the following headers from the request before forwarding
+           it to the provider's site:
+           * `accept-encoding`
+           * `accept-language`
+           * `accept`
+           * `if-match`
+           * `if-modified-since`
+           * `referer`
+           * `user-agent`
+        1. Starts proxying the web resource from the provider's site to the client.
+
+        1. If the web resource is detected to be an HTML document, stops proxying
            and respond with status code 302 to redirect the client to the web page.
         1. If the web resource is any other media type, preserve only these upstream
            response headers, and remove the rest:
