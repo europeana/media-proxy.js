@@ -36,6 +36,7 @@ export default class MongoSource {
     let webResourceId
     if (webResourceHash) {
       webResourceId = [aggregation.edmIsShownBy].concat(aggregation.hasView)
+        .filter((wr) => !!wr)
         .find((wr) => md5(wr) === webResourceHash)
     } else {
       webResourceId = aggregation.edmIsShownBy
