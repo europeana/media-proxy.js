@@ -10,10 +10,12 @@ describe('@/routes/media.js', () => {
   afterEach(sinon.reset)
   afterAll(sinon.restore)
 
-  describe('when data source lookup throws "Unauthorised API URL" error', () => {
-    it('sets status 403 and calls next', async () => {
+  describe('when data source lookup throws error', () => {
+    it('calls next', async () => {
+      let err
       requestedDataSourceStub.throws(() => {
-        return new Error('Unauthorised API URL')
+        err = new Error('Unauthorised API URL')
+        return err
       })
       const req = {}
       const res = { sendStatus: sinon.spy() }
@@ -21,7 +23,7 @@ describe('@/routes/media.js', () => {
 
       await mediaRoute({})(req, res, next)
 
-      expect(next.calledWith(sinon.match.has('status', 403))).toBe(true)
+      expect(next.calledWith(err)).toBe(true)
     })
   })
 

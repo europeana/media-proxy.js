@@ -1,6 +1,7 @@
 import axios from 'axios'
 import http from 'http'
 import https from 'https'
+import httpError from 'http-errors'
 import md5 from 'md5'
 
 export default class RecordApiSource {
@@ -29,7 +30,7 @@ export default class RecordApiSource {
 
   validateApiUrlPermitted (apiUrl) {
     if (apiUrl && !this.permittedApiUrls.includes(apiUrl)) {
-      throw new Error(`Unauthorised API URL: "${apiUrl}"`)
+      throw httpError(400, `Unauthorised API URL: "${apiUrl}"`)
     }
   }
 

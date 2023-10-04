@@ -33,9 +33,6 @@ export default (options) => {
       res.locals.webResourceId = webResource.id
       next()
     } catch (err) {
-      if (err.message === 'Unauthorised API URL') {
-        err.status = 403
-      }
       next(err)
     }
   }
