@@ -91,9 +91,9 @@ components:
           summary: '"maalaus" item (In Copyright) web resource hash'
           value: 8634fa12ac4d030a2a45b55b78ee5582
   responses:
-    403Forbidden:
+    400BadRequest:
       description: |
-        Proxying prohibited, due to requested Record API being unauthorised
+        Proxying aborted, due to requested Record API being unsupported
       content:
         "*/*":
           schema:
@@ -128,8 +128,8 @@ paths:
       summary: Redirect to proxy media for edm:isShownBy
       description: >
         1. If a Record API URL has been specified in `recordApiUrl`, checks if
-           it is permitted as a data source, and if not, responds with status
-           code 403. (If none specified, uses the default data source.)
+           it is supported as a data source, and if not, responds with status
+           code 400. (If none specified, uses the default data source.)
         1. Looks in our database for a Europeana item identified by the path
            parameters `/{datasetId}/{localId}`. If no such item is found, responds
            with status code 404.
@@ -156,8 +156,8 @@ paths:
                 type: string
                 example: Found. Redirecting to
                   /media/2020601/https___1914_1918_europeana_eu_contributions_14524/304028f2553becc2bb0e4c0164439ec8
-        "403":
-          $ref: "#/components/responses/403Forbidden"
+        "400":
+          $ref: "#/components/responses/400BadRequest"
         "404":
           description: Item not found, or has no edm:isShownBy
           content:
@@ -179,8 +179,8 @@ paths:
       summary: Proxy media for specific web resource
       description: >
         1. If a Record API URL has been specified in `recordApiUrl`, checks if
-           it is permitted as a data source, and if not, responds with status
-           code 403. (If none specified, uses the default data source.)
+           it is supported as a data source, and if not, responds with status
+           code 400. (If none specified, uses the default data source.)
         1. Looks in our database for a Europeana item identified by the path
            parameters `/{datasetId}/{localId}`. If no such item is found, responds
            with status code 404.
@@ -255,8 +255,8 @@ paths:
                 type: string
                 example: Found. Redirecting to
                   /media/2020601/https___1914_1918_europeana_eu_contributions_14524/304028f2553becc2bb0e4c0164439ec8
-        "403":
-          $ref: "#/components/responses/403Forbidden"
+        "400":
+          $ref: "#/components/responses/400BadRequest"
         "404":
           description: Item not found, or has no such web resource
           content:
