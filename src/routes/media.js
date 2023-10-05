@@ -1,5 +1,6 @@
 // TODO: move & rename to s'thing like middlewares/validate-media-request
 
+import httpError from 'http-errors'
 import md5 from 'md5'
 
 import dataSources from '../sources/index.js'
@@ -19,7 +20,7 @@ export default (options) => {
 
       if (!webResource) {
         // No isShownBy and no hash, or invalid hash
-        return res.sendStatus(404)
+        return next(httpError(404))
       } else if (!req.params.webResourceHash) {
         // Redirect to the URL with the hash, preserving the query
         let redirectPath = `/media/${req.params.datasetId}/${req.params.localId}/${md5(webResource.id)}`

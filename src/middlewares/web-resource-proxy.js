@@ -1,4 +1,5 @@
 import { createProxyMiddleware as createHttpProxyMiddleware } from 'http-proxy-middleware'
+import httpError from 'http-errors'
 import mime from 'mime-types'
 
 import { CONTENT_DISPOSITIONS, CONTENT_TYPES, HTTP_HEADERS } from '../lib/constants.js'
@@ -69,20 +70,19 @@ const setCustomResHeaders = (webResourceId, res) => {
 // Custom timeout handling to ensure empty responses aren't sent by http-proxy
 // just aborting without sending status code
 // TODO: make timeout durations configurable?
-// TODO: log errors to APM
-const handleTimeout = (req, res) => {
+const handleTimeout = (req, next) => {
   req.setTimeout(10000, () => {
     req.abort()
-    res.sendStatus(504)
+    next(httpError(504))
   })
 }
 
 // WARN: do not modify headers in this handler, as it may be called again on
 //       upstream redirects, resulting in errors.
-const onProxyReq = (webResourceId, next) => (proxyReq, req, res) => {
+const onProxyReq = (webResourceId, next) => (proxyReq, req) => {
   try {
-    handleTimeout(proxyReq, res)
-    handleTimeout(req, res)
+    handleTimeout(proxyReq, next)
+    handleTimeout(req, next)
   } catch (err) {
     next(err)
   }
@@ -95,7 +95,7 @@ const onProxyRes = (webResourceId, next) => (proxyRes, req, res) => {
 
     if (proxyRes.statusCode > 399) {
       // Upstream error. Normalise to plain-text response.
-      return res.sendStatus(proxyRes.statusCode)
+      next(httpError(proxyRes.statusCode))
     } else if (mime.extension(proxyRes.headers[HTTP_HEADERS.CONTENT_TYPE]) === 'html') {
       // HTML document. Redirect to it.
       return res.redirect(302, webResourceId)
@@ -146,7 +146,6 @@ const createWebResourceProxyMiddleware = (createProxyMiddleware) => (req, res, n
       next()
     }
   } catch (err) {
-    console.log('err', err)
     next(err)
   }
 }

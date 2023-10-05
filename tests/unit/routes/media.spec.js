@@ -28,14 +28,15 @@ describe('@/routes/media.js', () => {
   })
 
   describe('when web resource is not found in data source', () => {
-    it('sends status 404', async () => {
+    it('sends 404 error', async () => {
       requestedDataSourceStub.returns({ find: async () => null })
       const req = { params: {} }
       const res = { sendStatus: sinon.spy() }
+      const next = sinon.spy()
 
-      await mediaRoute({})(req, res)
+      await mediaRoute({})(req, res, next)
 
-      expect(res.sendStatus.calledWith(404)).toBe(true)
+      expect(next.calledWith(sinon.match((err) => err.status === 404))).toBe(true)
     })
   })
 

@@ -34,7 +34,6 @@ describe('@/middlewares/web-resource-proxy.js', () => {
       const res = {
         locals: { webResourceId: fixtures.webResourceId },
         redirect: sinon.spy(),
-        sendStatus: sinon.spy(),
         setHeader: sinon.spy()
       }
 
@@ -120,13 +119,13 @@ describe('@/middlewares/web-resource-proxy.js', () => {
 
       let proxyReqTimeoutCallback
       const proxyReqSetTimeoutStub = sinon.stub().callsFake((interval, callback) => proxyReqTimeoutCallback = callback)
-      const proxyReq = { abort: sinon.spy(), removeHeader: sinon.spy(), setTimeout: proxyReqSetTimeoutStub }
+      const proxyReq = { abort: sinon.spy(), setTimeout: proxyReqSetTimeoutStub }
 
       let reqTimeoutCallback
       const reqSetTimeoutStub = sinon.stub().callsFake((interval, callback) => reqTimeoutCallback = callback)
       const req = { abort: sinon.spy(), setTimeout: reqSetTimeoutStub }
 
-      const res = { sendStatus: sinon.spy() }
+      const res = {}
 
       it('sets timeout handler on proxied request', () => {
         proxyOptions.onProxyReq(proxyReq, req, res)
@@ -134,7 +133,7 @@ describe('@/middlewares/web-resource-proxy.js', () => {
         expect(proxyReq.setTimeout.calledWith(10000, sinon.match.func)).toBe(true)
         proxyReqTimeoutCallback()
         expect(proxyReq.abort.called).toBe(true)
-        expect(res.sendStatus.calledWith(504)).toBe(true)
+        expect(next.calledWith(sinon.match((err) => err.status === 504))).toBe(true)
       })
 
       it('sets timeout handler on original request', () => {
@@ -143,12 +142,12 @@ describe('@/middlewares/web-resource-proxy.js', () => {
         expect(req.setTimeout.calledWith(10000, sinon.match.func)).toBe(true)
         reqTimeoutCallback()
         expect(req.abort.called).toBe(true)
-        expect(res.sendStatus.calledWith(504)).toBe(true)
+        expect(next.calledWith(sinon.match((err) => err.status === 504))).toBe(true)
       })
 
       it('passes error to next middleware', () => {
         const err = new Error()
-        const proxyReq = { removeHeader: sinon.spy(), setTimeout: sinon.stub().throws(err) }
+        const proxyReq = { setTimeout: sinon.stub().throws(err) }
 
         proxyOptions.onProxyReq(proxyReq, req, res)
 
@@ -160,7 +159,7 @@ describe('@/middlewares/web-resource-proxy.js', () => {
       const next = sinon.spy()
       const proxyOptions = webResourceProxyOptions(fixtures.webResourceId, next)
       const proxyRes = { headers: {} }
-      const res = { redirect: sinon.spy(), sendStatus: sinon.spy(), setHeader: sinon.spy() }
+      const res = { redirect: sinon.spy(), setHeader: sinon.spy() }
       const req = { params: {}, query: {} }
 
       describe('proxied response header normalisation', () => {
@@ -202,10 +201,10 @@ describe('@/middlewares/web-resource-proxy.js', () => {
       describe('when upstream response is an error', () => {
         const proxyRes = { headers: {}, statusCode: 400 }
 
-        it('sends status code per the upstream', () => {
+        it('sends it to next', () => {
           proxyOptions.onProxyRes(proxyRes, null, res)
 
-          expect(res.sendStatus.calledWith(400)).toBe(true)
+          expect(next.calledWith(sinon.match((err) => err.status === 400))).toBe(true)
         })
       })
 

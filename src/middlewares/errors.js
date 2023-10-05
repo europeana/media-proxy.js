@@ -10,7 +10,7 @@ export default (err, req, res, next) => {
     const errorStatus = err.response?.status || err.status || err.statusCode || 502
 
     if (apm.isStarted()) {
-      apm.captureError(err, { message: err.response?.data?.error })
+      apm.captureError(err, { message: err.response?.data?.error, request: req, response: res })
     }
 
     res.sendStatus(errorStatus)
