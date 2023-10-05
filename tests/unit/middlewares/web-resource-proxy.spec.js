@@ -1,13 +1,93 @@
 import sinon from 'sinon'
 
-import { webResourceProxyOptions } from '@/middlewares/web-resource-proxy.js'
+import createWebResourceProxyMiddleware, { webResourceProxyOptions } from '@/middlewares/web-resource-proxy.js'
 
 const fixtures = {
-  webResourceId: 'https://www.example.org/image.jpg'
+  reqHeadersToDrop: {
+    cookie: 'monster',
+    origin: 'https://www.example.org'
+  },
+  reqHeadersToKeep: {
+    accept: '*',
+    'accept-encoding': 'gzip',
+    'accept-language': 'en',
+    'if-match': 'w/v1',
+    'if-modified-since': '2023-01-01',
+    referer: 'https://www.example.org/page.html',
+    'user-agent': 'curl'
+  },
+  webResourceId: 'https://www.example.org/image.jpg',
+  webResourceIdWithCharsEncoded: 'https://www.example.org/Te%C5%BEak.jpg',
+  webResourceIdWithCharsToEncode: 'https://www.example.org/Težak.jpg'
 }
 
 describe('@/middlewares/web-resource-proxy.js', () => {
   afterEach(sinon.resetHistory)
+
+  describe('middleware', () => {
+    const proxyMiddlewareStub = sinon.stub()
+    const createProxyMiddleware = sinon.stub().returns(proxyMiddlewareStub)
+    const next = sinon.spy()
+    const req = {}
+
+    describe('when response locals has webResourceId', () => {
+      const res = {
+        locals: { webResourceId: fixtures.webResourceId },
+        redirect: sinon.spy(),
+        sendStatus: sinon.spy(),
+        setHeader: sinon.spy()
+      }
+
+      it('uses proxyMiddleware to proxy to provider', () => {
+        createWebResourceProxyMiddleware(createProxyMiddleware)(req, res, next)
+
+        expect(createProxyMiddleware.called).toBe(true)
+        expect(proxyMiddlewareStub.called).toBe(true)
+      })
+
+      describe('custom x-europeana-web-resource header', () => {
+        it('is set to web resource ID', () => {
+          createWebResourceProxyMiddleware(createProxyMiddleware)(req, res, next)
+
+          expect(res.setHeader.calledWith('x-europeana-web-resource', fixtures.webResourceId)).toBe(true)
+        })
+
+        it('encodes characters not permitted in HTTP header values', () => {
+          createWebResourceProxyMiddleware(createProxyMiddleware)(req, {
+            ...res,
+            locals: { webResourceId: fixtures.webResourceIdWithCharsToEncode }
+          }, next)
+
+          expect(res.setHeader.calledWith('x-europeana-web-resource', fixtures.webResourceIdWithCharsEncoded)).toBe(true)
+        })
+      })
+
+      describe('request header filtering', () => {
+        const req = {
+          headers: {
+            ...fixtures.reqHeadersToKeep,
+            ...fixtures.reqHeadersToDrop
+          }
+        }
+
+        it('keeps select headers', () => {
+          createWebResourceProxyMiddleware(createProxyMiddleware)(req, res, next)
+
+          for (const name in fixtures.reqHeadersToKeep) {
+            expect(req.headers[name]).toBe(fixtures.reqHeadersToKeep[name])
+          }
+        })
+
+        it('drops other headers', () => {
+          createWebResourceProxyMiddleware(createProxyMiddleware)(req, res, next)
+
+          for (const name in fixtures.reqHeadersToDrop) {
+            expect(req.headers[name]).toBeUndefined()
+          }
+        })
+      })
+    })
+  })
 
   describe('webResourceProxyOptions', () => {
     it('changes origin in proxied request', () => {
@@ -116,22 +196,6 @@ describe('@/middlewares/web-resource-proxy.js', () => {
           proxyOptions.onProxyRes(proxyRes, req, res)
 
           expect(proxyRes.headers['content-type']).toBe('application/octet-stream')
-        })
-      })
-
-      describe('custom x-europeana-web-resource header', () => {
-        it('is set to web resource ID', () => {
-          proxyOptions.onProxyRes(proxyRes, req, res)
-
-          expect(res.setHeader.calledWith('x-europeana-web-resource', fixtures.webResourceId)).toBe(true)
-        })
-
-        it('encodes characters not permitted in HTTP header values', () => {
-          const proxyOptions = webResourceProxyOptions('https://www.example.org/Težak.jpg')
-
-          proxyOptions.onProxyRes(proxyRes, req, res)
-
-          expect(res.setHeader.calledWith('x-europeana-web-resource', 'https://www.example.org/Te%C5%BEak.jpg')).toBe(true)
         })
       })
 

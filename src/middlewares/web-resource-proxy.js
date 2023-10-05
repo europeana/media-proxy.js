@@ -1,4 +1,4 @@
-import { createProxyMiddleware } from 'http-proxy-middleware'
+import { createProxyMiddleware as createHttpProxyMiddleware } from 'http-proxy-middleware'
 import mime from 'mime-types'
 
 import { CONTENT_DISPOSITIONS, CONTENT_TYPES, HTTP_HEADERS } from '../lib/constants.js'
@@ -92,7 +92,6 @@ const onProxyRes = (webResourceId, next) => (proxyRes, req, res) => {
   try {
     filterProxyResHeaders(proxyRes)
     normaliseProxyResHeaders(proxyRes)
-    setCustomResHeaders(webResourceId, res)
 
     if (proxyRes.statusCode > 399) {
       // Upstream error. Normalise to plain-text response.
@@ -131,17 +130,25 @@ export const webResourceProxyOptions = (webResourceId, next) => {
   }
 }
 
-export default async (req, res, next) => {
+const createWebResourceProxyMiddleware = (createProxyMiddleware) => (req, res, next) => {
   try {
     if (res.locals.webResourceId) {
+      // set this early so it is still available on failed request responses,
+      // e.g. timeouts
+      setCustomResHeaders(res.locals.webResourceId, res)
+
       filterReqHeaders(req)
 
       const options = webResourceProxyOptions(res.locals.webResourceId, next)
-      await createProxyMiddleware(options)(req, res, next)
+      const proxyMiddleware = (createProxyMiddleware || createHttpProxyMiddleware)(options)
+      proxyMiddleware(req, res, next)
     } else {
       next()
     }
   } catch (err) {
+    console.log('err', err)
     next(err)
   }
 }
+
+export default createWebResourceProxyMiddleware
