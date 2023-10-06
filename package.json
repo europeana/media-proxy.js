@@ -58,6 +58,6 @@
     "test:coverage:ci": "npm run test -- --coverage --maxWorkers 2",
     "version": "node bin/openapi-version.js && node bin/sonar-project-version.js && git add docs/api && git add sonar-project.properties"
   },
-  "version": "0.2.2",
+  "version": "0.2.3",
   "type": "module"
 }
