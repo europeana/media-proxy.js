@@ -53,7 +53,7 @@ export default class RecordApiSource {
     }
 
     const item = apiResponse.data.object
-    const providerAggregation = item.aggregations.find((agg) => agg.about === `/aggregation/provider${itemId}`)
+    const providerAggregation = item.aggregations.find((agg) => agg.about.startsWith('/aggregation/provider/'))
 
     let webResourceId
     if (webResourceHash) {
