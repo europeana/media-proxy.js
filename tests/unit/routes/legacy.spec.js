@@ -27,7 +27,7 @@ describe('@/routes/legacy.js', () => {
   it('converts `api_url` query param to `recordApiUrl`, rewriting /api to /record', () => {
     const req = {
       params: { datasetId: '123', localId: 'abc' },
-      query: { 'api_url': 'https://api.example.org/api' }
+      query: { 'api_url': 'https%3A%2F%2Fapi.example.org%2Fapi' }
     }
     const res = { redirect: sinon.spy() }
 

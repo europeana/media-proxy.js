@@ -26,7 +26,7 @@ export default async (req, res, next) => {
     }
 
     if (redirectOptions.query['api_url']) {
-      const apiUrl = new URL(redirectOptions.query['api_url'])
+      const apiUrl = new URL(decodeURIComponent(redirectOptions.query['api_url']))
       if (apiUrl.pathname === '/api') {
         apiUrl.pathname = '/record'
       }
