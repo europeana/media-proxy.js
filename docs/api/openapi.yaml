@@ -10,7 +10,7 @@ info:
     url: https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
   contact:
     url: https://github.com/europeana/media-proxy.js
-  version: 0.2.3
+  version: 0.2.4
 externalDocs:
   description: Git repository README
   url: https://github.com/europeana/media-proxy.js#readme
