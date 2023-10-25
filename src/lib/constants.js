@@ -18,6 +18,7 @@ export const HTTP_HEADERS = {
   ACCEPT_RANGES: 'accept-ranges',
   CACHE_CONTROL: 'cache-control',
   CONTENT_DISPOSITION: 'content-disposition',
+  CONTENT_ENCODING: 'encoding',
   CONTENT_LENGTH: 'content-length',
   CONTENT_TYPE: 'content-type',
   ETAG: 'etag',

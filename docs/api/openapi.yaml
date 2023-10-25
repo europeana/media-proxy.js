@@ -204,6 +204,8 @@ paths:
         1. If the web resource is any other media type, preserve only these upstream
            response headers, and remove the rest:
            * `accept-ranges`
+           * `cache-control`
+           * `content-encoding`
            * `content-length`
            * `content-type`
            * `etag`
