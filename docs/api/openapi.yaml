@@ -195,6 +195,7 @@ paths:
            * `accept`
            * `if-match`
            * `if-modified-since`
+           * `range`
            * `referer`
            * `user-agent`
         1. Starts proxying the web resource from the provider's site to the client.
@@ -207,6 +208,7 @@ paths:
            * `cache-control`
            * `content-encoding`
            * `content-length`
+           * `content-range`
            * `content-type`
            * `etag`
            * `last-modified`
