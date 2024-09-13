@@ -13,6 +13,7 @@ const fixtures = {
     'accept-language': 'en',
     'if-match': 'w/v1',
     'if-modified-since': '2023-01-01',
+    range: 'bytes=11829248-',
     referer: 'https://www.example.org/page.html',
     'user-agent': 'curl'
   },
