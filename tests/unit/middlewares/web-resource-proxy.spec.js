@@ -102,19 +102,19 @@ describe('@/middlewares/web-resource-proxy.js', () => {
       expect(proxyOptions.followRedirects).toBe(true)
     })
 
-    describe('onError', () => {
+    describe('error', () => {
       it('calls next', () => {
         const next = sinon.spy()
         const proxyOptions = webResourceProxyOptions(fixtures.webResourceId, next)
         const err = new Error()
 
-        proxyOptions.onError(err)
+        proxyOptions.error(err)
 
         expect(next.calledWith(err)).toBe(true)
       })
     })
 
-    describe('onProxyReq', () => {
+    describe('proxyReq', () => {
       const next = sinon.spy()
       const proxyOptions = webResourceProxyOptions(fixtures.webResourceId, next)
 
@@ -129,7 +129,7 @@ describe('@/middlewares/web-resource-proxy.js', () => {
       const res = {}
 
       it('sets timeout handler on proxied request', () => {
-        proxyOptions.onProxyReq(proxyReq, req, res)
+        proxyOptions.proxyReq(proxyReq, req, res)
 
         expect(proxyReq.setTimeout.calledWith(10000, sinon.match.func)).toBe(true)
         proxyReqTimeoutCallback()
@@ -138,7 +138,7 @@ describe('@/middlewares/web-resource-proxy.js', () => {
       })
 
       it('sets timeout handler on original request', () => {
-        proxyOptions.onProxyReq(proxyReq, req, res)
+        proxyOptions.proxyReq(proxyReq, req, res)
 
         expect(req.setTimeout.calledWith(10000, sinon.match.func)).toBe(true)
         reqTimeoutCallback()
@@ -150,13 +150,13 @@ describe('@/middlewares/web-resource-proxy.js', () => {
         const err = new Error()
         const proxyReq = { setTimeout: sinon.stub().throws(err) }
 
-        proxyOptions.onProxyReq(proxyReq, req, res)
+        proxyOptions.proxyReq(proxyReq, req, res)
 
         expect(next.calledWith(err)).toBe(true)
       })
     })
 
-    describe('onProxyRes', () => {
+    describe('proxyRes', () => {
       const next = sinon.spy()
       const proxyOptions = webResourceProxyOptions(fixtures.webResourceId, next)
       const proxyRes = { headers: {} }
@@ -171,7 +171,7 @@ describe('@/middlewares/web-resource-proxy.js', () => {
             }
           }
 
-          proxyOptions.onProxyRes(proxyRes, req, res)
+          proxyOptions.proxyRes(proxyRes, req, res)
 
           expect(proxyRes.headers.etag).toBe('v1')
         })
@@ -183,7 +183,7 @@ describe('@/middlewares/web-resource-proxy.js', () => {
             }
           }
 
-          proxyOptions.onProxyRes(proxyRes, req, res)
+          proxyOptions.proxyRes(proxyRes, req, res)
 
           expect(proxyRes.headers['set-cookie']).toBeUndefined()
         })
@@ -193,7 +193,7 @@ describe('@/middlewares/web-resource-proxy.js', () => {
             headers: {}
           }
 
-          proxyOptions.onProxyRes(proxyRes, req, res)
+          proxyOptions.proxyRes(proxyRes, req, res)
 
           expect(proxyRes.headers['content-type']).toBe('application/octet-stream')
         })
@@ -203,7 +203,7 @@ describe('@/middlewares/web-resource-proxy.js', () => {
         const proxyRes = { headers: {}, statusCode: 400 }
 
         it('sends it to next', () => {
-          proxyOptions.onProxyRes(proxyRes, null, res)
+          proxyOptions.proxyRes(proxyRes, null, res)
 
           expect(next.calledWith(sinon.match((err) => err.status === 400))).toBe(true)
         })
@@ -213,7 +213,7 @@ describe('@/middlewares/web-resource-proxy.js', () => {
         const proxyRes = { headers: { 'content-type': 'text/html' } }
 
         it('302 redirects to it', () => {
-          proxyOptions.onProxyRes(proxyRes, null, res)
+          proxyOptions.proxyRes(proxyRes, null, res)
 
           expect(res.redirect.calledWith(302, fixtures.webResourceId)).toBe(true)
         })
@@ -228,7 +228,7 @@ describe('@/middlewares/web-resource-proxy.js', () => {
 
         describe('content-disposition response header', () => {
           it('defaults to attachment, with derived filename', () => {
-            proxyOptions.onProxyRes(proxyRes, req, res)
+            proxyOptions.proxyRes(proxyRes, req, res)
 
             expect(res.setHeader.calledWith(
               'content-disposition',
@@ -238,7 +238,7 @@ describe('@/middlewares/web-resource-proxy.js', () => {
 
           describe('with disposition=inline in request query', () => {
             it('is inline, with derived filename', () => {
-              proxyOptions.onProxyRes(proxyRes, { ...req, query: { disposition: 'inline' } }, res)
+              proxyOptions.proxyRes(proxyRes, { ...req, query: { disposition: 'inline' } }, res)
 
               expect(res.setHeader.calledWith(
                 'content-disposition',
@@ -253,7 +253,7 @@ describe('@/middlewares/web-resource-proxy.js', () => {
         const err = new Error()
         const res = { setHeader: sinon.stub().throws(err) }
 
-        proxyOptions.onProxyRes(proxyRes, req, res)
+        proxyOptions.proxyRes(proxyRes, req, res)
 
         expect(next.calledWith(err)).toBe(true)
       })
