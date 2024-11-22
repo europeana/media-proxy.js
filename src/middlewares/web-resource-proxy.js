@@ -119,12 +119,14 @@ export const webResourceProxyOptions = (webResourceId, next) => {
 
   return {
     changeOrigin: true,
+    error: next,
     followRedirects: true,
-    logLevel: process.NODE_ENV === 'production' ? 'error' : 'info',
-    onError: next,
-    onProxyReq: onProxyReq(webResourceId, next),
-    onProxyRes: onProxyRes(webResourceId, next),
+    // FIXME: option remove from http-proxy-middleware in v3
+    //        https://github.com/chimurai/http-proxy-middleware/blob/master/MIGRATION.md#removed-logprovider-and-loglevel-options
+    // logLevel: process.NODE_ENV === 'production' ? 'error' : 'info',
     pathRewrite: () => `${webResourceUrl.pathname}${webResourceUrl.search}`,
+    proxyReq: onProxyReq(webResourceId, next),
+    proxyRes: onProxyRes(webResourceId, next),
     // NOTE: do not use this, as it results in empty responses
     // proxyTimeout: 10000,
     target: webResourceUrl.origin
