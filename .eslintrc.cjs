@@ -44,7 +44,7 @@ module.exports = {
     'key-spacing': ['error', { afterColon: true }],
     'keyword-spacing': ['error', { before: true, after: true }],
     'linebreak-style': ['error', 'unix'],
-    'max-len': ['error', { code: 120 }],
+    'max-len': ['error', { code: 120, comments: 140 }],
     'no-array-constructor': 'error',
     'no-bitwise': 'error',
     'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
