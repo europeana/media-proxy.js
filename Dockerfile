@@ -14,7 +14,7 @@ COPY src ./src
 RUN npm run build
 
 
-FROM gcr.io/distroless/nodejs:22
+FROM gcr.io/distroless/nodejs22-debian12
 
 ENV PORT=8080 \
     HOST=0.0.0.0 \
