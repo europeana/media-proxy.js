@@ -2,6 +2,7 @@ import { createProxyMiddleware as createHttpProxyMiddleware } from 'http-proxy-m
 import httpError from 'http-errors'
 import mime from 'mime-types'
 
+import pkg from '../../package.json' with { type: 'json' }
 import { CONTENT_DISPOSITIONS, CONTENT_TYPES, HTTP_HEADERS } from '../lib/constants.js'
 
 const requestHeadersToProxy = [
@@ -11,8 +12,7 @@ const requestHeadersToProxy = [
   HTTP_HEADERS.IF_MATCH,
   HTTP_HEADERS.IF_MODIFIED_SINCE,
   HTTP_HEADERS.RANGE,
-  HTTP_HEADERS.REFERER,
-  HTTP_HEADERS.USER_AGENT
+  HTTP_HEADERS.REFERER
 ]
 
 const responseHeadersToProxy = [
@@ -47,6 +47,11 @@ const filterReqHeaders = (req) => {
       delete req.headers[header]
     }
   }
+}
+
+const setCustomReqHeaders = (req) => {
+  // Set custom user-agent header
+  req.setHeader(HTTP_HEADERS.USER_AGENT, `EuropeanaMediaProxy/${pkg.version}`)
 }
 
 const filterProxyResHeaders = (proxyRes) => {
@@ -136,11 +141,12 @@ export const webResourceProxyOptions = (webResourceId, next) => {
 const createWebResourceProxyMiddleware = (createProxyMiddleware) => (req, res, next) => {
   try {
     if (res.locals.webResourceId) {
+      filterReqHeaders(req)
+      setCustomReqHeaders(req)
+
       // set this early so it is still available on failed request responses,
       // e.g. timeouts
       setCustomResHeaders(res.locals.webResourceId, res)
-
-      filterReqHeaders(req)
 
       const options = webResourceProxyOptions(res.locals.webResourceId, next)
       const proxyMiddleware = (createProxyMiddleware || createHttpProxyMiddleware)(options)

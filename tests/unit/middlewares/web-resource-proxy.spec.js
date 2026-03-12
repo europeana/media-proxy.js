@@ -5,7 +5,8 @@ import createWebResourceProxyMiddleware, { webResourceProxyOptions } from '@/mid
 const fixtures = {
   reqHeadersToDrop: {
     cookie: 'monster',
-    origin: 'https://www.example.org'
+    origin: 'https://www.example.org',
+    'user-agent': 'curl'
   },
   reqHeadersToKeep: {
     accept: '*',
@@ -14,8 +15,7 @@ const fixtures = {
     'if-match': 'w/v1',
     'if-modified-since': '2023-01-01',
     range: 'bytes=11829248-',
-    referer: 'https://www.example.org/page.html',
-    'user-agent': 'curl'
+    referer: 'https://www.example.org/page.html'
   },
   webResourceId: 'https://www.example.org/image.jpg',
   webResourceIdWithCharsEncoded: 'https://www.example.org/Te%C5%BEak.jpg',
@@ -29,7 +29,7 @@ describe('@/middlewares/web-resource-proxy.js', () => {
     const proxyMiddlewareStub = sinon.stub()
     const createProxyMiddleware = sinon.stub().returns(proxyMiddlewareStub)
     const next = sinon.spy()
-    const req = {}
+    const req = { setHeader: sinon.spy() }
 
     describe('when response locals has webResourceId', () => {
       const res = {
@@ -67,7 +67,8 @@ describe('@/middlewares/web-resource-proxy.js', () => {
           headers: {
             ...fixtures.reqHeadersToKeep,
             ...fixtures.reqHeadersToDrop
-          }
+          },
+          setHeader: sinon.spy()
         }
 
         it('keeps select headers', () => {
@@ -84,6 +85,12 @@ describe('@/middlewares/web-resource-proxy.js', () => {
           for (const name in fixtures.reqHeadersToDrop) {
             expect(req.headers[name]).toBeUndefined()
           }
+        })
+
+        it('sets a custom user-agent header', () => {
+          createWebResourceProxyMiddleware(createProxyMiddleware)(req, res, next)
+
+          expect(req.setHeader.calledWith('user-agent', sinon.match((value) => value.startsWith('EuropeanaMediaProxy/')))).toBe(true)
         })
       })
     })
