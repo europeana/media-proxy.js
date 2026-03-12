@@ -86,12 +86,6 @@ describe('@/middlewares/web-resource-proxy.js', () => {
             expect(req.headers[name]).toBeUndefined()
           }
         })
-
-        it('sets a custom user-agent header', () => {
-          createWebResourceProxyMiddleware(createProxyMiddleware)(req, res, next)
-
-          expect(req.setHeader.calledWith('user-agent', sinon.match((value) => value.startsWith('EuropeanaMediaProxy/')))).toBe(true)
-        })
       })
     })
   })
@@ -127,13 +121,19 @@ describe('@/middlewares/web-resource-proxy.js', () => {
 
       let proxyReqTimeoutCallback
       const proxyReqSetTimeoutStub = sinon.stub().callsFake((interval, callback) => proxyReqTimeoutCallback = callback)
-      const proxyReq = { abort: sinon.spy(), setTimeout: proxyReqSetTimeoutStub }
+      const proxyReq = { abort: sinon.spy(), setHeader: sinon.spy(), setTimeout: proxyReqSetTimeoutStub }
 
       let reqTimeoutCallback
       const reqSetTimeoutStub = sinon.stub().callsFake((interval, callback) => reqTimeoutCallback = callback)
       const req = { abort: sinon.spy(), setTimeout: reqSetTimeoutStub }
 
       const res = {}
+
+      it('sets a custom user-agent header', () => {
+        proxyOptions.onProxyReq(proxyReq, req, res)
+
+        expect(proxyReq.setHeader.calledWith('user-agent', sinon.match((value) => value.startsWith('EuropeanaMediaProxy/')))).toBe(true)
+      })
 
       it('sets timeout handler on proxied request', () => {
         proxyOptions.onProxyReq(proxyReq, req, res)
@@ -155,7 +155,7 @@ describe('@/middlewares/web-resource-proxy.js', () => {
 
       it('passes error to next middleware', () => {
         const err = new Error()
-        const proxyReq = { setTimeout: sinon.stub().throws(err) }
+        const proxyReq = { setHeader: sinon.spy(), setTimeout: sinon.stub().throws(err) }
 
         proxyOptions.onProxyReq(proxyReq, req, res)
 

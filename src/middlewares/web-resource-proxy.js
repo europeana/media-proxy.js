@@ -49,11 +49,6 @@ const filterReqHeaders = (req) => {
   }
 }
 
-const setCustomReqHeaders = (req) => {
-  // Set custom user-agent header
-  req.setHeader(HTTP_HEADERS.USER_AGENT, `EuropeanaMediaProxy/${pkg.version}`)
-}
-
 const filterProxyResHeaders = (proxyRes) => {
   // Delete any response headers we don't want to proxy.
   for (const header in proxyRes.headers) {
@@ -85,9 +80,11 @@ const handleTimeout = (req, next) => {
   })
 }
 
-// WARN: do not modify headers in this handler, as it may be called again on
+// WARN: avoid modifying headers in this handler, as it may be called again on
 //       upstream redirects, resulting in errors.
 const onProxyReq = (webResourceId, next) => (proxyReq, req) => {
+  // Set custom user-agent header
+  proxyReq.setHeader(HTTP_HEADERS.USER_AGENT, `EuropeanaMediaProxy/${pkg.version}`)
   try {
     handleTimeout(proxyReq, next)
     handleTimeout(req, next)
@@ -142,7 +139,6 @@ const createWebResourceProxyMiddleware = (createProxyMiddleware) => (req, res, n
   try {
     if (res.locals.webResourceId) {
       filterReqHeaders(req)
-      setCustomReqHeaders(req)
 
       // set this early so it is still available on failed request responses,
       // e.g. timeouts
