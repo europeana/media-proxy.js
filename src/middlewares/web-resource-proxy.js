@@ -133,18 +133,29 @@ export const webResourceProxyOptions = (webResourceId, next) => {
   }
 }
 
-const createWebResourceProxyMiddleware = (createProxyMiddleware) => (req, res, next) => {
+const webResourceProxyMiddleware = (req, res, next) => {
   try {
     if (res.locals.webResourceId) {
       // set this early so it is still available on failed request responses,
       // e.g. timeouts
       setCustomResHeaders(res.locals.webResourceId, res)
 
-      filterReqHeaders(req)
-
-      const options = webResourceProxyOptions(res.locals.webResourceId, next)
-      const proxyMiddleware = (createProxyMiddleware || createHttpProxyMiddleware)(options)
-      proxyMiddleware(req, res, next)
+      // filterReqHeaders(req)
+      fetch(res.locals.webResourceId).then(({ body, headers }) => {
+        body.pipeTo(
+          new WritableStream({
+            start() {
+              headers.forEach((v, n) => res.setHeader(n, v))
+            },
+            write(chunk) {
+              res.write(chunk)
+            },
+            close() {
+              res.end()
+            },
+          })
+        )
+      })
     } else {
       next()
     }
@@ -153,4 +164,4 @@ const createWebResourceProxyMiddleware = (createProxyMiddleware) => (req, res, n
   }
 }
 
-export default createWebResourceProxyMiddleware
+export default webResourceProxyMiddleware
