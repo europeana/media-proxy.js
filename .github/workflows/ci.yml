@@ -87,11 +87,9 @@ jobs:
       -
         name: Unarchive code coverage
         run: tar -xf coverage.tar && rm coverage.tar && ls -l coverage/lcov.info
-      -
-        name: SonarCloud Scan
-        uses: sonarsource/sonarcloud-github-action@v2.0.0
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v7
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   docker-build:
