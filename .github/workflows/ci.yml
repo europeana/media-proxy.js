@@ -63,7 +63,7 @@ jobs:
           tar -cf coverage.tar coverage
       -
         name: Upload code coverage
-        uses: actions/upload-artifact@v8
+        uses: actions/upload-artifact@v7
         with:
           name: coverage
           path: coverage.tar
