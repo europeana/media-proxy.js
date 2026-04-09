@@ -1,4 +1,4 @@
-import { createProxyMiddleware as createHttpProxyMiddleware } from 'http-proxy-middleware'
+import { Readable } from 'stream'
 import httpError from 'http-errors'
 import mime from 'mime-types'
 
@@ -40,118 +40,76 @@ const contentDisposition = ({ contentType, req } = {}) => {
   return `${attachmentOrInline}; filename="${filename}"`
 }
 
-const filterReqHeaders = (req) => {
-  // Delete any request headers we don't want to proxy.
-  for (const header in req.headers) {
-    if (!requestHeadersToProxy.includes(header)) {
-      delete req.headers[header]
-    }
-  }
-}
+// TODO: restore timeout handling, inc for fetch
+// const handleTimeout = (req, next) => {
+//   req.setTimeout(10000, () => {
+//     req.abort()
+//     next(httpError(504))
+//   })
+// }
 
-const filterProxyResHeaders = (proxyRes) => {
-  // Delete any response headers we don't want to proxy.
-  for (const header in proxyRes.headers) {
-    if (!responseHeadersToProxy.includes(header)) {
-      delete proxyRes.headers[header]
-    }
-  }
-}
-
-const normaliseProxyResHeaders = (proxyRes) => {
-  // Default content-type to application/octet-stream, if not present
-  if (!proxyRes.headers[HTTP_HEADERS.CONTENT_TYPE]) {
-    proxyRes.headers[HTTP_HEADERS.CONTENT_TYPE] = CONTENT_TYPES.APPLICATION_OCTET_STREAM
-  }
-}
-
-const setCustomResHeaders = (webResourceId, res) => {
-  // Set custom x-europeana-web-resource header to URL of web resource
-  res.setHeader(HTTP_HEADERS.X_EUROPEANA_WEB_RESOURCE, new URL(webResourceId).toString())
-}
-
-// Custom timeout handling to ensure empty responses aren't sent by http-proxy
-// just aborting without sending status code
-// TODO: make timeout durations configurable?
-const handleTimeout = (req, next) => {
-  req.setTimeout(10000, () => {
-    req.abort()
-    next(httpError(504))
-  })
-}
-
-const onProxyReq = (webResourceId, next) => (proxyReq, req) => {
-  // redirects already have headers sent, so do not attempt to re-modify
-  if (!proxyReq['_isRedirect']) {
-    // Set custom user-agent header
-    proxyReq.setHeader(HTTP_HEADERS.USER_AGENT, `EuropeanaMediaProxy/${pkg.version} (https://www.europeana.eu)`)
-  }
-
+// TODO: refactor into smaller functions
+const createWebResourceProxyMiddleware = (req, res, next) => {
   try {
-    handleTimeout(proxyReq, next)
-    handleTimeout(req, next)
-  } catch (err) {
-    next(err)
-  }
-}
-
-const onProxyRes = (webResourceId, next) => (proxyRes, req, res) => {
-  try {
-    filterProxyResHeaders(proxyRes)
-    normaliseProxyResHeaders(proxyRes)
-
-    if (proxyRes.statusCode > 399) {
-      // Upstream error. Normalise to plain-text response.
-      next(httpError(proxyRes.statusCode))
-    } else if (mime.extension(proxyRes.headers[HTTP_HEADERS.CONTENT_TYPE]) === 'html') {
-      // HTML document. Redirect to it.
-      return res.redirect(302, webResourceId)
-    } else {
-      // Proxy everything else.
-      res.setHeader(HTTP_HEADERS.CONTENT_DISPOSITION, contentDisposition({
-        contentType: proxyRes.headers[HTTP_HEADERS.CONTENT_TYPE],
-        req
-      }))
-    }
-  } catch (err) {
-    next(err)
-  }
-}
-
-export const webResourceProxyOptions = (webResourceId, next) => {
-  const webResourceUrl = new URL(webResourceId)
-
-  return {
-    changeOrigin: true,
-    followRedirects: true,
-    logLevel: process.NODE_ENV === 'production' ? 'error' : 'info',
-    onError: next,
-    onProxyReq: onProxyReq(webResourceId, next),
-    onProxyRes: onProxyRes(webResourceId, next),
-    pathRewrite: () => `${webResourceUrl.pathname}${webResourceUrl.search}`,
-    // NOTE: do not use this, as it results in empty responses
-    // proxyTimeout: 10000,
-    target: webResourceUrl.origin
-    // NOTE: do not use this, as it results in empty responses
-    // timeout: 11000
-  }
-}
-
-const createWebResourceProxyMiddleware = (createProxyMiddleware) => (req, res, next) => {
-  try {
-    if (res.locals.webResourceId) {
-      filterReqHeaders(req)
-
-      // set this early so it is still available on failed request responses,
-      // e.g. timeouts
-      setCustomResHeaders(res.locals.webResourceId, res)
-
-      const options = webResourceProxyOptions(res.locals.webResourceId, next)
-      const proxyMiddleware = (createProxyMiddleware || createHttpProxyMiddleware)(options)
-      proxyMiddleware(req, res, next)
-    } else {
+    if (!res.locals.webResourceId) {
       next()
+      return
     }
+
+    const reqHeaders = new Headers(req.headers)
+    console.log('reqHeaders', reqHeaders)
+    for (const headerName of reqHeaders.keys()) {
+      if (!requestHeadersToProxy.includes(headerName)) {
+        reqHeaders.delete(headerName)
+      }
+    }
+    reqHeaders.set(HTTP_HEADERS.USER_AGENT, `EuropeanaMediaProxy/${pkg.version} (https://www.europeana.eu)`)
+
+    return fetch(res.locals.webResourceId, {
+      body: ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body),
+      headers: reqHeaders,
+      method: req.method
+    })
+      .then((response) => {
+        res.status(response.status)
+
+        const resHeaders = new Headers(response.headers)
+        for (const headerName of resHeaders.keys()) {
+          if (!responseHeadersToProxy.includes(headerName)) {
+            resHeaders.delete(headerName)
+          }
+        }
+        resHeaders.set(HTTP_HEADERS.X_EUROPEANA_WEB_RESOURCE, res.locals.webResourceId)
+
+        // Default content-type to application/octet-stream, if not present
+        if (!resHeaders.has(HTTP_HEADERS.CONTENT_TYPE)) {
+          resHeaders.set(HTTP_HEADERS.CONTENT_TYPE, CONTENT_TYPES.APPLICATION_OCTET_STREAM)
+        }
+
+        res.setHeaders(resHeaders)
+
+        try {
+          if (response.status > 399) {
+            // Upstream error. Normalise to plain-text response.
+            next(httpError(response.status))
+          } else if (mime.extension(resHeaders.get(HTTP_HEADERS.CONTENT_TYPE)) === 'html') {
+            // HTML document. Redirect to it.
+            return res.redirect(302, res.locals.webResourceId)
+          } else {
+            // Proxy everything else.
+            res.setHeader(HTTP_HEADERS.CONTENT_DISPOSITION, contentDisposition({
+              contentType: resHeaders.get(HTTP_HEADERS.CONTENT_TYPE),
+              req
+            }))
+          }
+        } catch (err) {
+          next(err)
+        }
+
+        Readable.fromWeb(response.body)
+          .pipe(res)
+          .on('error', next)
+      }, next)
   } catch (err) {
     next(err)
   }
