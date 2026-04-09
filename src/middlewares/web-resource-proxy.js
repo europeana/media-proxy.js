@@ -80,11 +80,13 @@ const handleTimeout = (req, next) => {
   })
 }
 
-// WARN: avoid modifying headers in this handler, as it may be called again on
-//       upstream redirects, resulting in errors.
 const onProxyReq = (webResourceId, next) => (proxyReq, req) => {
-  // Set custom user-agent header
-  proxyReq.setHeader(HTTP_HEADERS.USER_AGENT, `EuropeanaMediaProxy/${pkg.version}`)
+  // redirects already have headers sent, so do not attempt to re-modify
+  if (!proxyReq['_isRedirect']) {
+    // Set custom user-agent header
+    proxyReq.setHeader(HTTP_HEADERS.USER_AGENT, `EuropeanaMediaProxy/${pkg.version} (https://www.europeana.eu)`)
+  }
+
   try {
     handleTimeout(proxyReq, next)
     handleTimeout(req, next)
