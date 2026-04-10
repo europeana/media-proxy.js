@@ -49,15 +49,15 @@ const contentDisposition = ({ contentType, req } = {}) => {
 // }
 
 // TODO: refactor into smaller functions
-const createWebResourceProxyMiddleware = (req, res, next) => {
+const webResourceProxyMiddleware = async(req, res, next) => {
   try {
     if (!res.locals.webResourceId) {
       next()
       return
     }
+    res.set(HTTP_HEADERS.X_EUROPEANA_WEB_RESOURCE, res.locals.webResourceId)
 
     const reqHeaders = new Headers(req.headers)
-    console.log('reqHeaders', reqHeaders)
     for (const headerName of reqHeaders.keys()) {
       if (!requestHeadersToProxy.includes(headerName)) {
         reqHeaders.delete(headerName)
@@ -65,54 +65,58 @@ const createWebResourceProxyMiddleware = (req, res, next) => {
     }
     reqHeaders.set(HTTP_HEADERS.USER_AGENT, `EuropeanaMediaProxy/${pkg.version} (https://www.europeana.eu)`)
 
-    return fetch(res.locals.webResourceId, {
-      body: ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body),
-      headers: reqHeaders,
-      method: req.method
-    })
-      .then((response) => {
-        res.status(response.status)
+    let response
+    try {
+      response = await fetch(res.locals.webResourceId, {
+        body: ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body),
+        headers: reqHeaders,
+        method: req.method
+      })
+    } catch {
+      // fetch error, e.g. SSL cert expired, network error
+      next(httpError(502))
+      return
+    }
 
-        const resHeaders = new Headers(response.headers)
-        for (const headerName of resHeaders.keys()) {
-          if (!responseHeadersToProxy.includes(headerName)) {
-            resHeaders.delete(headerName)
-          }
-        }
-        resHeaders.set(HTTP_HEADERS.X_EUROPEANA_WEB_RESOURCE, res.locals.webResourceId)
+    if (!response.ok) {
+      // Upstream error. Normalise to plain-text response.
+      return next(httpError(response.status))
+    } else if (mime.extension(response.headers.get(HTTP_HEADERS.CONTENT_TYPE)) === 'html') {
+      // HTML document. Redirect to it.
+      return res.redirect(302, res.locals.webResourceId)
+    }
 
-        // Default content-type to application/octet-stream, if not present
-        if (!resHeaders.has(HTTP_HEADERS.CONTENT_TYPE)) {
-          resHeaders.set(HTTP_HEADERS.CONTENT_TYPE, CONTENT_TYPES.APPLICATION_OCTET_STREAM)
-        }
+    res.status(response.status)
 
-        res.setHeaders(resHeaders)
+    // Proxy everything else.
 
-        try {
-          if (response.status > 399) {
-            // Upstream error. Normalise to plain-text response.
-            next(httpError(response.status))
-          } else if (mime.extension(resHeaders.get(HTTP_HEADERS.CONTENT_TYPE)) === 'html') {
-            // HTML document. Redirect to it.
-            return res.redirect(302, res.locals.webResourceId)
-          } else {
-            // Proxy everything else.
-            res.setHeader(HTTP_HEADERS.CONTENT_DISPOSITION, contentDisposition({
-              contentType: resHeaders.get(HTTP_HEADERS.CONTENT_TYPE),
-              req
-            }))
-          }
-        } catch (err) {
-          next(err)
-        }
+    for (const headerName of responseHeadersToProxy) {
+      if (response.headers.has(headerName)) {
+        res.set(headerName, response.headers.get(headerName))
+      }
+    }
 
-        Readable.fromWeb(response.body)
-          .pipe(res)
-          .on('error', next)
-      }, next)
+    // Default content-type to application/octet-stream, if not present
+    if (!res.get(HTTP_HEADERS.CONTENT_TYPE)) {
+      res.set(HTTP_HEADERS.CONTENT_TYPE, CONTENT_TYPES.APPLICATION_OCTET_STREAM)
+    }
+
+    res.set(HTTP_HEADERS.CONTENT_DISPOSITION, contentDisposition({
+      contentType: res.get(HTTP_HEADERS.CONTENT_TYPE),
+      req
+    }))
+
+    // response body may be empty, e.g. in HEAD requests
+    if (response.body) {
+      Readable.fromWeb(response.body)
+        .pipe(res)
+        .on('error', next)
+    } else {
+      res.end()
+    }
   } catch (err) {
     next(err)
   }
 }
 
-export default createWebResourceProxyMiddleware
+export default webResourceProxyMiddleware
