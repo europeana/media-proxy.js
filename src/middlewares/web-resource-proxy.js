@@ -67,6 +67,7 @@ const webResourceProxyMiddleware = async(req, res, next) => {
 
     let response
     try {
+      // TODO: only stricly needs to handle GET as that's what is routed by the app
       response = await fetch(res.locals.webResourceId, {
         body: ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body),
         headers: reqHeaders,
