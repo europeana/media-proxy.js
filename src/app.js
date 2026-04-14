@@ -12,7 +12,10 @@ app.use(middlewares.logging)
 app.use(middlewares.cors)
 
 app.get('/', routes.health)
-app.get('/media/:datasetId/:localId/:webResourceHash?', routes.media(config), middlewares.webResourceProxy())
+app.get('/media/:datasetId/:localId/:webResourceHash?/:upstreamPath?',
+  routes.media(config),
+  middlewares.webResourceProxy()
+)
 app.get('/:datasetId/:localId', routes.legacy)
 
 app.use(middlewares.errors)
