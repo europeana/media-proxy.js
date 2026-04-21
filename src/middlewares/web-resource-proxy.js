@@ -98,8 +98,10 @@ const webResourceProxyMiddleware = async (req, res, next) => {
     const proxyReq = {
       body: ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body),
       headers: new Headers(),
-      method: req.method,
-      signal: AbortSignal.timeout(10_000)
+      method: req.method
+      // NOTE: this does not work as a connection timeout handler as it triggers if the download takes
+      //       more than 10 seconds too
+      // signal: AbortSignal.timeout(10_000)
     }
     setProxiedReqHeaders(proxyReq, req)
     setProxyReqUserAgentHeader(proxyReq)
