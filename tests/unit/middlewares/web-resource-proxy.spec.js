@@ -139,15 +139,31 @@ describe('@/middlewares/web-resource-proxy.js', () => {
         })
       })
 
-      describe('when fetch threw an error, e.g. ssl/network issue', () => {
-        beforeEach(() => {
-          global.fetch.rejects(new Error('Network error'))
+      describe('when fetch threw an error', () => {
+        describe('of type TimeoutError', () => {
+          beforeEach(() => {
+            const error = new Error('Timeout')
+            error.name = 'TimeoutError'
+            global.fetch.rejects(error)
+          })
+
+          it('sends a 504-status error to next', async () => {
+            await webResourceProxyMiddleware(req, res, next)
+
+            expect(next.calledWith(sinon.match((err) => err.status === 504))).toBe(true)
+          })
         })
 
-        it('sends a 502-status error to next', async () => {
-          await webResourceProxyMiddleware(req, res, next)
+        describe('of other type, e.g. ssl/network issue', () => {
+          beforeEach(() => {
+            global.fetch.rejects(new Error('Network error'))
+          })
 
-          expect(next.calledWith(sinon.match((err) => err.status === 502))).toBe(true)
+          it('sends a 502-status error to next', async () => {
+            await webResourceProxyMiddleware(req, res, next)
+
+            expect(next.calledWith(sinon.match((err) => err.status === 502))).toBe(true)
+          })
         })
       })
 
@@ -164,7 +180,6 @@ describe('@/middlewares/web-resource-proxy.js', () => {
             locals: { webResourceId: fixtures.webResourceIdWithCharsToEncode }
           }, next)
 
-          console.log('res.set.getCalls', JSON.stringify(res.set.getCalls(), null, 2))
           expect(res.set.calledWith('x-europeana-web-resource', fixtures.webResourceIdWithCharsEncoded)).toBe(true)
         })
       })
@@ -327,36 +342,4 @@ describe('@/middlewares/web-resource-proxy.js', () => {
       })
     })
   })
-
-  // describe('onProxyReq', () => {
-  //   const next = sinon.spy()
-  //   const proxyOptions = webResourceProxyOptions(fixtures.webResourceId, next)
-
-  //   let proxyReqTimeoutCallback
-  //   const proxyReqSetTimeoutStub = sinon.stub().callsFake((interval, callback) => proxyReqTimeoutCallback = callback)
-  //   const proxyReq = { abort: sinon.spy(), set: sinon.spy(), setTimeout: proxyReqSetTimeoutStub }
-
-  //   let reqTimeoutCallback
-  //   const reqSetTimeoutStub = sinon.stub().callsFake((interval, callback) => reqTimeoutCallback = callback)
-  //   const req = { abort: sinon.spy(), setTimeout: reqSetTimeoutStub }
-
-  //   const res = {}
-
-  //   it('sets timeout handler on proxied request', () => {
-  //     proxyOptions.onProxyReq(proxyReq, req, res)
-
-  //     expect(proxyReq.setTimeout.calledWith(10000, sinon.match.func)).toBe(true)
-  //     proxyReqTimeoutCallback()
-  //     expect(proxyReq.abort.called).toBe(true)
-  //     expect(next.calledWith(sinon.match((err) => err.status === 504))).toBe(true)
-  //   })
-
-  //   it('sets timeout handler on original request', () => {
-  //     proxyOptions.onProxyReq(proxyReq, req, res)
-
-  //     expect(req.setTimeout.calledWith(10000, sinon.match.func)).toBe(true)
-  //     reqTimeoutCallback()
-  //     expect(req.abort.called).toBe(true)
-  //     expect(next.calledWith(sinon.match((err) => err.status === 504))).toBe(true)
-  //   })
 })

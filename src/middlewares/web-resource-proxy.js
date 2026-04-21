@@ -85,14 +85,6 @@ const setResContentHeaders = (proxyRes, req, res) => {
   res.set(HTTP_HEADERS.CONTENT_TYPE, mime.contentType(filename) || CONTENT_TYPES.APPLICATION_OCTET_STREAM)
 }
 
-// TODO: restore timeout handling, inc for fetch
-// const handleTimeout = (req, next) => {
-//   req.setTimeout(10000, () => {
-//     req.abort()
-//     next(httpError(504))
-//   })
-// }
-
 // TODO: refactor into smaller functions
 const webResourceProxyMiddleware = async (req, res, next) => {
   try {
@@ -104,10 +96,10 @@ const webResourceProxyMiddleware = async (req, res, next) => {
     res.set(HTTP_HEADERS.X_EUROPEANA_WEB_RESOURCE, new URL(res.locals.webResourceId).toString())
 
     const proxyReq = {
-      // TODO: only strictly needs to handle GET as that's what is routed by the app
       body: ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body),
       headers: new Headers(),
-      method: req.method
+      method: req.method,
+      signal: AbortSignal.timeout(10_000)
     }
     setProxiedReqHeaders(proxyReq, req)
     setProxyReqUserAgentHeader(proxyReq)
@@ -115,9 +107,13 @@ const webResourceProxyMiddleware = async (req, res, next) => {
     let proxyRes
     try {
       proxyRes = await fetch(res.locals.webResourceId, proxyReq)
-    } catch {
-      // fetch error, e.g. SSL cert expired, network error
-      next(httpError(502))
+    } catch (err) {
+      if (err.name === 'TimeoutError') {
+        next(httpError(504))
+      } else {
+        // other fetch error, e.g. SSL cert expired, network error
+        next(httpError(502))
+      }
       return
     }
 
@@ -144,7 +140,7 @@ const webResourceProxyMiddleware = async (req, res, next) => {
       res.end()
     }
   } catch (err) {
-    // console.error(err)
+    console.error(err)
     next(err)
   }
 }
