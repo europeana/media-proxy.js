@@ -53,15 +53,17 @@ const resFilename = (proxyRes, req) => {
   return filename
 }
 
-const setResContentHeaders = (proxyRes, req, res) => {
-  const filename = resFilename(proxyRes, req)
+const setProxiedReqHeaders = (proxyReq, req) => {
+  const reqHeaders = new Headers(req.headers)
+  for (const headerName of requestHeadersToProxy) {
+    if (reqHeaders.has(headerName)) {
+      proxyReq.headers.set(headerName, reqHeaders.get(headerName))
+    }
+  }
+}
 
-  const attachmentOrInline = (req.query.disposition === CONTENT_DISPOSITIONS.INLINE) ?
-    CONTENT_DISPOSITIONS.INLINE :
-    CONTENT_DISPOSITIONS.ATTACHMENT
-
-  res.setHeader(HTTP_HEADERS.CONTENT_DISPOSITION, `${attachmentOrInline}; filename="${filename}"`)
-  res.setHeader(HTTP_HEADERS.CONTENT_TYPE, mime.contentType(filename) || CONTENT_TYPES.APPLICATION_OCTET_STREAM)
+const setProxyReqUserAgentHeader = (proxyReq) => {
+  proxyReq.headers.set(HTTP_HEADERS.USER_AGENT, `EuropeanaMediaProxy/${pkg.version} (https://www.europeana.eu)`)
 }
 
 const setProxiedResHeaders = (proxyRes, req, res) => {
@@ -70,6 +72,17 @@ const setProxiedResHeaders = (proxyRes, req, res) => {
       res.set(headerName, proxyRes.headers.get(headerName))
     }
   }
+}
+
+const setResContentHeaders = (proxyRes, req, res) => {
+  const filename = resFilename(proxyRes, req)
+
+  const attachmentOrInline = (req.query?.disposition === CONTENT_DISPOSITIONS.INLINE) ?
+    CONTENT_DISPOSITIONS.INLINE :
+    CONTENT_DISPOSITIONS.ATTACHMENT
+
+  res.set(HTTP_HEADERS.CONTENT_DISPOSITION, `${attachmentOrInline}; filename="${filename}"`)
+  res.set(HTTP_HEADERS.CONTENT_TYPE, mime.contentType(filename) || CONTENT_TYPES.APPLICATION_OCTET_STREAM)
 }
 
 // TODO: restore timeout handling, inc for fetch
@@ -89,22 +102,18 @@ const webResourceProxyMiddleware = async (req, res, next) => {
     }
     res.set(HTTP_HEADERS.X_EUROPEANA_WEB_RESOURCE, res.locals.webResourceId)
 
-    const proxyReqHeaders = new Headers(req.headers)
-    for (const headerName of proxyReqHeaders.keys()) {
-      if (!requestHeadersToProxy.includes(headerName)) {
-        proxyReqHeaders.delete(headerName)
-      }
+    const proxyReq = {
+      // TODO: only strictly needs to handle GET as that's what is routed by the app
+      body: ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body),
+      headers: new Headers(),
+      method: req.method
     }
-    proxyReqHeaders.set(HTTP_HEADERS.USER_AGENT, `EuropeanaMediaProxy/${pkg.version} (https://www.europeana.eu)`)
+    setProxiedReqHeaders(proxyReq, req)
+    setProxyReqUserAgentHeader(proxyReq)
 
     let proxyRes
     try {
-      // TODO: only strictly needs to handle GET as that's what is routed by the app
-      proxyRes = await fetch(res.locals.webResourceId, {
-        body: ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body),
-        headers: proxyReqHeaders,
-        method: req.method
-      })
+      proxyRes = await fetch(res.locals.webResourceId, proxyReq)
     } catch {
       // fetch error, e.g. SSL cert expired, network error
       next(httpError(502))
@@ -134,6 +143,7 @@ const webResourceProxyMiddleware = async (req, res, next) => {
       res.end()
     }
   } catch (err) {
+    // console.error(err)
     next(err)
   }
 }
