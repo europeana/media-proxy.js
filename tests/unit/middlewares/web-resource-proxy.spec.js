@@ -164,13 +164,13 @@ describe('@/middlewares/web-resource-proxy.js', () => {
     })
 
     describe('onProxyRes', () => {
-      const next = sinon.spy()
+      const next = sinon.stub()
       const proxyOptions = webResourceProxyOptions(fixtures.webResourceId, next)
       const proxyRes = { headers: {} }
       const res = { redirect: sinon.spy(), setHeader: sinon.spy() }
       const req = { params: {}, query: {} }
 
-      describe('proxied response header normalisation', () => {
+      describe('proxy response header filtering', () => {
         it('keeps select headers', () => {
           const proxyRes = {
             headers: {
@@ -193,16 +193,6 @@ describe('@/middlewares/web-resource-proxy.js', () => {
           proxyOptions.onProxyRes(proxyRes, req, res)
 
           expect(proxyRes.headers['set-cookie']).toBeUndefined()
-        })
-
-        it('defaults content-type to "application/octet-stream" if absent', () => {
-          const proxyRes = {
-            headers: {}
-          }
-
-          proxyOptions.onProxyRes(proxyRes, req, res)
-
-          expect(proxyRes.headers['content-type']).toBe('application/octet-stream')
         })
       })
 
@@ -227,30 +217,120 @@ describe('@/middlewares/web-resource-proxy.js', () => {
       })
 
       describe('when upstream resource is to be proxied', () => {
-        const proxyRes = { headers: { 'content-type': 'image/jpeg' } }
         const req = {
           params: { datasetId: '123', localId: 'abc', webResourceHash: 'd1299d035beb29c5b3b36e7f7c5c8610' },
           query: {}
         }
 
+        describe('content-type header', () => {
+          it('first, uses upstream content-type unless "application/octet-stream"', () => {
+            const proxyRes = {
+              headers: {
+                'content-type': 'image/png'
+              }
+            }
+
+            proxyOptions.onProxyRes(proxyRes, req, res)
+
+            expect(res.setHeader.calledWith('content-type', 'image/png')).toBe(true)
+          })
+
+          it('second, is dervied from upstream content-disposition if present', () => {
+            const proxyRes = {
+              headers: {
+                'content-disposition': 'attachment; filename="model.obj"',
+                'content-type': 'application/octet-stream'
+              }
+            }
+
+            proxyOptions.onProxyRes(proxyRes, req, res)
+
+            expect(res.setHeader.calledWith('content-type', 'model/obj')).toBe(true)
+          })
+
+          it('last, falls back to "application/octet-stream"', () => {
+            const proxyRes = {
+              headers: {}
+            }
+
+            proxyOptions.onProxyRes(proxyRes, req, res)
+
+            expect(res.setHeader.calledWith('content-type', 'application/octet-stream')).toBe(true)
+          })
+        })
+
         describe('content-disposition response header', () => {
-          it('defaults to attachment, with derived filename', () => {
+          it('defaults to attachment', () => {
+            const proxyRes = { headers: { 'content-type': 'image/jpeg' } }
+
             proxyOptions.onProxyRes(proxyRes, req, res)
 
             expect(res.setHeader.calledWith(
               'content-disposition',
-              'attachment; filename="Europeana.eu-123-abc-d1299d035beb29c5b3b36e7f7c5c8610.jpeg"'
+              sinon.match((value) => value.startsWith('attachment; '))
             )).toBe(true)
           })
 
           describe('with disposition=inline in request query', () => {
-            it('is inline, with derived filename', () => {
+            it('is inline', () => {
+              const proxyRes = { headers: { 'content-type': 'image/jpeg' } }
+
               proxyOptions.onProxyRes(proxyRes, { ...req, query: { disposition: 'inline' } }, res)
 
               expect(res.setHeader.calledWith(
                 'content-disposition',
-                'inline; filename="Europeana.eu-123-abc-d1299d035beb29c5b3b36e7f7c5c8610.jpeg"'
+                sinon.match((value) => value.startsWith('inline; '))
               )).toBe(true)
+            })
+          })
+
+          describe('filename', () => {
+            describe('basename', () => {
+              it('is derived from request parameters', () => {
+                const proxyRes = { headers: { 'content-type': 'image/jpeg' } }
+
+                proxyOptions.onProxyRes(proxyRes, req, res)
+
+                expect(res.setHeader.calledWith(
+                  'content-disposition',
+                  sinon.match((value) => value.includes('filename="Europeana.eu-123-abc-d1299d035beb29c5b3b36e7f7c5c8610'))
+                )).toBe(true)
+              })
+            })
+
+            describe('extension', () => {
+              it('first, is taken from upstream content-type header', () => {
+                const proxyRes = { headers: { 'content-type': 'image/jpeg' } }
+
+                proxyOptions.onProxyRes(proxyRes, req, res)
+
+                expect(res.setHeader.calledWith(
+                  'content-disposition',
+                  sinon.match((value) => value.endsWith('.jpeg"'))
+                )).toBe(true)
+              })
+
+              it('second, is dervied from upstream content-disposition header', () => {
+                const proxyRes = { headers: { 'content-disposition': 'attachment; filename="model.obj"' } }
+
+                proxyOptions.onProxyRes(proxyRes, req, res)
+
+                expect(res.setHeader.calledWith(
+                  'content-disposition',
+                  sinon.match((value) => value.endsWith('.obj"'))
+                )).toBe(true)
+              })
+
+              it('finally, falls back to ".bin"', () => {
+                const proxyRes = { headers: {} }
+
+                proxyOptions.onProxyRes(proxyRes, req, res)
+
+                expect(res.setHeader.calledWith(
+                  'content-disposition',
+                  sinon.match((value) => value.endsWith('.bin"'))
+                )).toBe(true)
+              })
             })
           })
         })

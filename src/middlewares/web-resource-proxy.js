@@ -1,3 +1,4 @@
+import { parse as parseContentDisposition } from 'content-disposition'
 import { Readable } from 'stream'
 import httpError from 'http-errors'
 import mime from 'mime-types'
@@ -18,26 +19,63 @@ const requestHeadersToProxy = [
 const responseHeadersToProxy = [
   HTTP_HEADERS.ACCEPT_RANGES,
   HTTP_HEADERS.CACHE_CONTROL,
+  // NOTE: will be overwritten by `setResContentHeaders`, but upstream value used there,
+  //       so not removed by `filterProxyResHeaders`
+  // HTTP_HEADERS.CONTENT_DISPOSITION,
   HTTP_HEADERS.CONTENT_ENCODING,
   HTTP_HEADERS.CONTENT_LENGTH,
   HTTP_HEADERS.CONTENT_RANGE,
-  HTTP_HEADERS.CONTENT_TYPE,
+  // NOTE: will be overwritten by `setResContentHeaders`, but upstream value used there,
+  //       so not removed by `filterProxyResHeaders`
+  // HTTP_HEADERS.CONTENT_TYPE,
   HTTP_HEADERS.ETAG,
   HTTP_HEADERS.LAST_MODIFIED,
   HTTP_HEADERS.LINK
 ]
 
-const contentDisposition = ({ contentType, req } = {}) => {
+const resFilename = (proxyRes, req) => {
+  let proxyContentType = proxyRes.headers[HTTP_HEADERS.CONTENT_TYPE]
+  if (proxyContentType === CONTENT_TYPES.APPLICATION_OCTET_STREAM) {
+    proxyContentType = undefined
+  }
+  const proxyContentDisposition = proxyRes.headers[HTTP_HEADERS.CONTENT_DISPOSITION]
+  const proxyFilename = proxyContentDisposition ?
+    parseContentDisposition(proxyContentDisposition)?.parameters?.filename :
+    undefined
+
   const { datasetId, localId, webResourceHash } = req.params
+  const basename = `Europeana.eu-${datasetId}-${localId}-${webResourceHash}`
+
+  // Get filename extension from:
+  // 1. upstream content-type header
+  // 2. upstream content-disposition header filename
+  // 3. falling back to "bin" otherwise
+  const extension = mime.extension(proxyContentType) ||
+    mime.extension(mime.contentType(proxyFilename)) ||
+    mime.extension(CONTENT_TYPES.APPLICATION_OCTET_STREAM)
+
+  const filename = `${basename}.${extension}`
+
+  return filename
+}
+
+const setResContentHeaders = (proxyRes, req, res) => {
+  const filename = resFilename(proxyRes, req)
+
   const attachmentOrInline = (req.query.disposition === CONTENT_DISPOSITIONS.INLINE) ?
     CONTENT_DISPOSITIONS.INLINE :
     CONTENT_DISPOSITIONS.ATTACHMENT
 
-  const basename = `Europeana.eu-${datasetId}-${localId}-${webResourceHash}`
-  // Get filename extension from content type, falling back to "bin" if that fails
-  const extension = mime.extension(contentType) || mime.extension(CONTENT_TYPES.APPLICATION_OCTET_STREAM)
-  const filename = `${basename}.${extension}`
-  return `${attachmentOrInline}; filename="${filename}"`
+  res.setHeader(HTTP_HEADERS.CONTENT_DISPOSITION, `${attachmentOrInline}; filename="${filename}"`)
+  res.setHeader(HTTP_HEADERS.CONTENT_TYPE, mime.contentType(filename) || CONTENT_TYPES.APPLICATION_OCTET_STREAM)
+}
+
+const filterResContentHeaders = (proxyRes, req, res) => {
+  for (const headerName of responseHeadersToProxy) {
+    if (proxyRes.headers.has(headerName)) {
+      res.set(headerName, proxyRes.headers.get(headerName))
+    }
+  }
 }
 
 // TODO: restore timeout handling, inc for fetch
@@ -49,7 +87,7 @@ const contentDisposition = ({ contentType, req } = {}) => {
 // }
 
 // TODO: refactor into smaller functions
-const webResourceProxyMiddleware = async(req, res, next) => {
+const webResourceProxyMiddleware = async (req, res, next) => {
   try {
     if (!res.locals.webResourceId) {
       next()
@@ -57,20 +95,20 @@ const webResourceProxyMiddleware = async(req, res, next) => {
     }
     res.set(HTTP_HEADERS.X_EUROPEANA_WEB_RESOURCE, res.locals.webResourceId)
 
-    const reqHeaders = new Headers(req.headers)
-    for (const headerName of reqHeaders.keys()) {
+    const proxyReqHeaders = new Headers(req.headers)
+    for (const headerName of proxyReqHeaders.keys()) {
       if (!requestHeadersToProxy.includes(headerName)) {
-        reqHeaders.delete(headerName)
+        proxyReqHeaders.delete(headerName)
       }
     }
-    reqHeaders.set(HTTP_HEADERS.USER_AGENT, `EuropeanaMediaProxy/${pkg.version} (https://www.europeana.eu)`)
+    proxyReqHeaders.set(HTTP_HEADERS.USER_AGENT, `EuropeanaMediaProxy/${pkg.version} (https://www.europeana.eu)`)
 
-    let response
+    let proxyRes
     try {
-      // TODO: only stricly needs to handle GET as that's what is routed by the app
-      response = await fetch(res.locals.webResourceId, {
+      // TODO: only strictly needs to handle GET as that's what is routed by the app
+      proxyRes = await fetch(res.locals.webResourceId, {
         body: ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body),
-        headers: reqHeaders,
+        headers: proxyReqHeaders,
         method: req.method
       })
     } catch {
@@ -79,37 +117,23 @@ const webResourceProxyMiddleware = async(req, res, next) => {
       return
     }
 
-    if (!response.ok) {
+    if (!proxyRes.ok) {
       // Upstream error. Normalise to plain-text response.
-      return next(httpError(response.status))
-    } else if (mime.extension(response.headers.get(HTTP_HEADERS.CONTENT_TYPE)) === 'html') {
+      return next(httpError(proxyRes.status))
+    } else if (mime.extension(proxyRes.headers.get(HTTP_HEADERS.CONTENT_TYPE)) === 'html') {
       // HTML document. Redirect to it.
       return res.redirect(302, res.locals.webResourceId)
     }
 
-    res.status(response.status)
-
     // Proxy everything else.
+    res.status(proxyRes.status)
 
-    for (const headerName of responseHeadersToProxy) {
-      if (response.headers.has(headerName)) {
-        res.set(headerName, response.headers.get(headerName))
-      }
-    }
-
-    // Default content-type to application/octet-stream, if not present
-    if (!res.get(HTTP_HEADERS.CONTENT_TYPE)) {
-      res.set(HTTP_HEADERS.CONTENT_TYPE, CONTENT_TYPES.APPLICATION_OCTET_STREAM)
-    }
-
-    res.set(HTTP_HEADERS.CONTENT_DISPOSITION, contentDisposition({
-      contentType: res.get(HTTP_HEADERS.CONTENT_TYPE),
-      req
-    }))
+    filterResContentHeaders(proxyRes, req, res)
+    setResContentHeaders(proxyRes, req, res)
 
     // response body may be empty, e.g. in HEAD requests
-    if (response.body) {
-      Readable.fromWeb(response.body)
+    if (proxyRes.body) {
+      Readable.fromWeb(proxyRes.body)
         .pipe(res)
         .on('error', next)
     } else {

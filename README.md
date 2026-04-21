@@ -15,9 +15,7 @@ Documentation is available at https://europeana.github.io/media-proxy.js/api/.
 ## Requirements
 
 * Node.js 22
-* Data store credentials; one of:
-  * Europeana item metadata MongoDB access credentials (recommended)
-  * [Europeana API key](https://pro.europeana.eu/get-api)
+* [Europeana API key](https://www.europeana.eu/account/api-keys)
 
 
 ## Configuration
@@ -26,23 +24,9 @@ Configuration is by environment variable.
 
 ### Required
 
-#### Data source
-
-Either a Europeana item metadata MongoDB, or a Europeana Record API is required
-as a data source. MongoDB is recommended.
-
-#### MongoDB
+#### Europeana Record API
 
 ```sh
-APP_DATA_SOURCE=mongodb
-MONGODB_DATABASE=europeana-item-metadata
-MONGODB_URI=mongodb://user:pass@server1.example.org:27017,server2.example.org:27017
-```
-
-#### Record API
-
-```sh
-APP_DATA_SOURCE=record-api
 EUROPEANA_API_KEY=YOUR_API_KEY
 EUROPEANA_API_URL=https://api.europeana.eu/record
 ```
