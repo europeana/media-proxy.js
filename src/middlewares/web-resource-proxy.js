@@ -1,3 +1,4 @@
+import { parse as parseContentDisposition } from 'content-disposition'
 import { createProxyMiddleware as createHttpProxyMiddleware } from 'http-proxy-middleware'
 import httpError from 'http-errors'
 import mime from 'mime-types'
@@ -18,26 +19,55 @@ const requestHeadersToProxy = [
 const responseHeadersToProxy = [
   HTTP_HEADERS.ACCEPT_RANGES,
   HTTP_HEADERS.CACHE_CONTROL,
+  // NOTE: will be overwritten by `onProxyRes`, but upstream value used there,
+  //       so not removed by `filterProxyResHeaders`
+  // HTTP_HEADERS.CONTENT_DISPOSITION,
   HTTP_HEADERS.CONTENT_ENCODING,
   HTTP_HEADERS.CONTENT_LENGTH,
   HTTP_HEADERS.CONTENT_RANGE,
-  HTTP_HEADERS.CONTENT_TYPE,
+  // NOTE: will be overwritten by `onProxyRes`, but upstream value used there,
+  //       so not removed by `filterProxyResHeaders`
+  // HTTP_HEADERS.CONTENT_TYPE,
   HTTP_HEADERS.ETAG,
   HTTP_HEADERS.LAST_MODIFIED,
   HTTP_HEADERS.LINK
 ]
 
-const contentDisposition = ({ contentType, req } = {}) => {
+const resFilename = (proxyRes, req) => {
+  let proxyContentType = proxyRes.headers[HTTP_HEADERS.CONTENT_TYPE]
+  if (proxyContentType === CONTENT_TYPES.APPLICATION_OCTET_STREAM) {
+    proxyContentType = undefined
+  }
+  const proxyContentDisposition = proxyRes.headers[HTTP_HEADERS.CONTENT_DISPOSITION]
+  const proxyFilename = proxyContentDisposition ?
+    parseContentDisposition(proxyContentDisposition)?.parameters?.filename :
+    undefined
+
   const { datasetId, localId, webResourceHash } = req.params
+  const basename = `Europeana.eu-${datasetId}-${localId}-${webResourceHash}`
+
+  // Get filename extension from:
+  // 1. upstream content-type header
+  // 2. upstream content-disposition header filename
+  // 3. falling back to "bin" otherwise
+  const extension = mime.extension(proxyContentType) ||
+    mime.extension(mime.contentType(proxyFilename)) ||
+    mime.extension(CONTENT_TYPES.APPLICATION_OCTET_STREAM)
+
+  const filename = `${basename}.${extension}`
+
+  return filename
+}
+
+const setResContentHeaders = (proxyRes, req, res) => {
+  const filename = resFilename(proxyRes, req)
+
   const attachmentOrInline = (req.query.disposition === CONTENT_DISPOSITIONS.INLINE) ?
     CONTENT_DISPOSITIONS.INLINE :
     CONTENT_DISPOSITIONS.ATTACHMENT
 
-  const basename = `Europeana.eu-${datasetId}-${localId}-${webResourceHash}`
-  // Get filename extension from content type, falling back to "bin" if that fails
-  const extension = mime.extension(contentType) || mime.extension(CONTENT_TYPES.APPLICATION_OCTET_STREAM)
-  const filename = `${basename}.${extension}`
-  return `${attachmentOrInline}; filename="${filename}"`
+  res.setHeader(HTTP_HEADERS.CONTENT_DISPOSITION, `${attachmentOrInline}; filename="${filename}"`)
+  res.setHeader(HTTP_HEADERS.CONTENT_TYPE, mime.contentType(filename) || CONTENT_TYPES.APPLICATION_OCTET_STREAM)
 }
 
 const filterReqHeaders = (req) => {
@@ -55,13 +85,6 @@ const filterProxyResHeaders = (proxyRes) => {
     if (!responseHeadersToProxy.includes(header)) {
       delete proxyRes.headers[header]
     }
-  }
-}
-
-const normaliseProxyResHeaders = (proxyRes) => {
-  // Default content-type to application/octet-stream, if not present
-  if (!proxyRes.headers[HTTP_HEADERS.CONTENT_TYPE]) {
-    proxyRes.headers[HTTP_HEADERS.CONTENT_TYPE] = CONTENT_TYPES.APPLICATION_OCTET_STREAM
   }
 }
 
@@ -97,9 +120,6 @@ const onProxyReq = (webResourceId, next) => (proxyReq, req) => {
 
 const onProxyRes = (webResourceId, next) => (proxyRes, req, res) => {
   try {
-    filterProxyResHeaders(proxyRes)
-    normaliseProxyResHeaders(proxyRes)
-
     if (proxyRes.statusCode > 399) {
       // Upstream error. Normalise to plain-text response.
       next(httpError(proxyRes.statusCode))
@@ -108,10 +128,8 @@ const onProxyRes = (webResourceId, next) => (proxyRes, req, res) => {
       return res.redirect(302, webResourceId)
     } else {
       // Proxy everything else.
-      res.setHeader(HTTP_HEADERS.CONTENT_DISPOSITION, contentDisposition({
-        contentType: proxyRes.headers[HTTP_HEADERS.CONTENT_TYPE],
-        req
-      }))
+      setResContentHeaders(proxyRes, req, res)
+      filterProxyResHeaders(proxyRes)
     }
   } catch (err) {
     next(err)
