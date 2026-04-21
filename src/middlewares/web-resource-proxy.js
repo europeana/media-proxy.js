@@ -19,26 +19,20 @@ const requestHeadersToProxy = [
 const responseHeadersToProxy = [
   HTTP_HEADERS.ACCEPT_RANGES,
   HTTP_HEADERS.CACHE_CONTROL,
-  // NOTE: will be overwritten by `setResContentHeaders`, but upstream value used there,
-  //       so not removed by `filterProxyResHeaders`
-  // HTTP_HEADERS.CONTENT_DISPOSITION,
   HTTP_HEADERS.CONTENT_ENCODING,
   HTTP_HEADERS.CONTENT_LENGTH,
   HTTP_HEADERS.CONTENT_RANGE,
-  // NOTE: will be overwritten by `setResContentHeaders`, but upstream value used there,
-  //       so not removed by `filterProxyResHeaders`
-  // HTTP_HEADERS.CONTENT_TYPE,
   HTTP_HEADERS.ETAG,
   HTTP_HEADERS.LAST_MODIFIED,
   HTTP_HEADERS.LINK
 ]
 
 const resFilename = (proxyRes, req) => {
-  let proxyContentType = proxyRes.headers[HTTP_HEADERS.CONTENT_TYPE]
+  let proxyContentType = proxyRes.headers.get(HTTP_HEADERS.CONTENT_TYPE)
   if (proxyContentType === CONTENT_TYPES.APPLICATION_OCTET_STREAM) {
     proxyContentType = undefined
   }
-  const proxyContentDisposition = proxyRes.headers[HTTP_HEADERS.CONTENT_DISPOSITION]
+  const proxyContentDisposition = proxyRes.headers.get(HTTP_HEADERS.CONTENT_DISPOSITION)
   const proxyFilename = proxyContentDisposition ?
     parseContentDisposition(proxyContentDisposition)?.parameters?.filename :
     undefined
@@ -70,7 +64,7 @@ const setResContentHeaders = (proxyRes, req, res) => {
   res.setHeader(HTTP_HEADERS.CONTENT_TYPE, mime.contentType(filename) || CONTENT_TYPES.APPLICATION_OCTET_STREAM)
 }
 
-const filterResContentHeaders = (proxyRes, req, res) => {
+const setProxiedResHeaders = (proxyRes, req, res) => {
   for (const headerName of responseHeadersToProxy) {
     if (proxyRes.headers.has(headerName)) {
       res.set(headerName, proxyRes.headers.get(headerName))
@@ -128,7 +122,7 @@ const webResourceProxyMiddleware = async (req, res, next) => {
     // Proxy everything else.
     res.status(proxyRes.status)
 
-    filterResContentHeaders(proxyRes, req, res)
+    setProxiedResHeaders(proxyRes, req, res)
     setResContentHeaders(proxyRes, req, res)
 
     // response body may be empty, e.g. in HEAD requests
