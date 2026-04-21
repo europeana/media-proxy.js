@@ -100,7 +100,8 @@ const webResourceProxyMiddleware = async (req, res, next) => {
       next()
       return
     }
-    res.set(HTTP_HEADERS.X_EUROPEANA_WEB_RESOURCE, res.locals.webResourceId)
+    // do this early so that errors/redirects still get it
+    res.set(HTTP_HEADERS.X_EUROPEANA_WEB_RESOURCE, new URL(res.locals.webResourceId).toString())
 
     const proxyReq = {
       // TODO: only strictly needs to handle GET as that's what is routed by the app
