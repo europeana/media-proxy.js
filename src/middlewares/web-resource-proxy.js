@@ -1,5 +1,5 @@
 import { parse as parseContentDisposition } from 'content-disposition'
-import { Readable } from 'stream'
+import { Readable } from 'node:stream'
 import httpError from 'http-errors'
 import mime from 'mime-types'
 
