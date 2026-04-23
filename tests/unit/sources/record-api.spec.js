@@ -149,7 +149,7 @@ describe('@/sources/record-api.js', () => {
 
           const webResource = await recordApiSource.find(fixtures.itemId, fixtures.edmHasViewHash)
 
-          expect(webResource.id).toBe(fixtures.edmHasViewId)
+          expect(webResource.about).toBe(fixtures.edmHasViewId)
         })
       })
     })
@@ -165,7 +165,7 @@ describe('@/sources/record-api.js', () => {
 
           const webResource = await recordApiSource.find(fixtures.itemId)
 
-          expect(webResource.id).toBe(fixtures.edmIsShownById)
+          expect(webResource.about).toBe(fixtures.edmIsShownById)
         })
       })
     })
