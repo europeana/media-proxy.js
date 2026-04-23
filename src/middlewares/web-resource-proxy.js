@@ -19,7 +19,8 @@ const requestHeadersToProxy = [
 const responseHeadersToProxy = [
   HTTP_HEADERS.ACCEPT_RANGES,
   HTTP_HEADERS.CACHE_CONTROL,
-  HTTP_HEADERS.CONTENT_ENCODING,
+  // resources are decompressed by fetch...
+  // HTTP_HEADERS.CONTENT_ENCODING,
   HTTP_HEADERS.CONTENT_LENGTH,
   HTTP_HEADERS.CONTENT_RANGE,
   HTTP_HEADERS.ETAG,
@@ -135,6 +136,7 @@ const webResourceProxyMiddleware = async (req, res, next) => {
 
     // response body may be empty, e.g. in HEAD requests
     if (proxyRes.body) {
+      console.log('sending body')
       Readable.fromWeb(proxyRes.body)
         .pipe(res)
         .on('error', next)
