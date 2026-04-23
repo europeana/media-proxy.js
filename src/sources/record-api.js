@@ -55,20 +55,19 @@ export default class RecordApiSource {
     const item = apiResponse.data.object
     const providerAggregation = item.aggregations.find((agg) => agg.about.startsWith('/aggregation/provider/'))
 
-    let webResourceId
+    let webResource
     if (webResourceHash) {
-      webResourceId = providerAggregation.webResources
-        .find((wr) => md5(wr.about) === webResourceHash)?.about
+      webResource = providerAggregation.webResources
+        .find((wr) => md5(wr.about) === webResourceHash)
     } else {
-      webResourceId = providerAggregation.edmIsShownBy
+      webResource = providerAggregation.webResources
+        .find((wr) => wr.about === providerAggregation.edmIsShownBy)
     }
 
-    if (!webResourceId) {
+    if (!webResource) {
       return null
     }
 
-    return {
-      id: webResourceId
-    }
+    return webResource
   }
 }

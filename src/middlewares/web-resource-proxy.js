@@ -19,20 +19,18 @@ const requestHeadersToProxy = [
 const responseHeadersToProxy = [
   HTTP_HEADERS.ACCEPT_RANGES,
   HTTP_HEADERS.CACHE_CONTROL,
-  // NOTE: will be overwritten by `onProxyRes`, but upstream value used there,
-  //       so not removed by `filterProxyResHeaders`
-  // HTTP_HEADERS.CONTENT_DISPOSITION,
   HTTP_HEADERS.CONTENT_ENCODING,
   HTTP_HEADERS.CONTENT_LENGTH,
   HTTP_HEADERS.CONTENT_RANGE,
-  // NOTE: will be overwritten by `onProxyRes`, but upstream value used there,
-  //       so not removed by `filterProxyResHeaders`
-  // HTTP_HEADERS.CONTENT_TYPE,
   HTTP_HEADERS.ETAG,
   HTTP_HEADERS.LAST_MODIFIED,
   HTTP_HEADERS.LINK
 ]
 
+/**
+ * @param {IncomingMessage} proxyRes
+ * @param {IncomingMessage} req
+ */
 const resFilename = (proxyRes, req) => {
   let proxyContentType = proxyRes.headers[HTTP_HEADERS.CONTENT_TYPE]
   if (proxyContentType === CONTENT_TYPES.APPLICATION_OCTET_STREAM) {
@@ -59,7 +57,13 @@ const resFilename = (proxyRes, req) => {
   return filename
 }
 
+/**
+ * @param {IncomingMessage} proxyRes
+ * @param {IncomingMessage} req
+ * @param {ServerResponse} res
+ */
 const setResContentHeaders = (proxyRes, req, res) => {
+  const webResource = res.locals?.webResource
   const filename = resFilename(proxyRes, req)
 
   const attachmentOrInline = (req.query.disposition === CONTENT_DISPOSITIONS.INLINE) ?
@@ -68,8 +72,19 @@ const setResContentHeaders = (proxyRes, req, res) => {
 
   res.setHeader(HTTP_HEADERS.CONTENT_DISPOSITION, `${attachmentOrInline}; filename="${filename}"`)
   res.setHeader(HTTP_HEADERS.CONTENT_TYPE, mime.contentType(filename) || CONTENT_TYPES.APPLICATION_OCTET_STREAM)
+
+  // no content-length supplied, so set from EDM if available, but not if
+  // response is compressed
+  if (!res.getHeader(HTTP_HEADERS.CONTENT_LENGTH) && !res.getHeader(HTTP_HEADERS.CONTENT_ENCODING)) {
+    if ((webResource?.ebucoreFileByteSize || 0) > 0) {
+      res.setHeader(HTTP_HEADERS.CONTENT_LENGTH, webResource.ebucoreFileByteSize)
+    }
+  }
 }
 
+/**
+ * @param {IncomingMessage} req
+ */
 const filterReqHeaders = (req) => {
   // Delete any request headers we don't want to proxy.
   for (const header in req.headers) {
@@ -79,15 +94,35 @@ const filterReqHeaders = (req) => {
   }
 }
 
-const filterProxyResHeaders = (proxyRes) => {
+/**
+ * @param {IncomingMessage} proxyRes
+ * @param {IncomingMessage} req
+ * @param {ServerResponse} res
+ */
+const filterProxyResHeaders = (proxyRes, req, res) => {
   // Delete any response headers we don't want to proxy.
+  // They need to be deleted from the proxyRes as otherwise will be
+  // copied over to res by http-proxy-middleware later on.
   for (const header in proxyRes.headers) {
     if (!responseHeadersToProxy.includes(header)) {
       delete proxyRes.headers[header]
     }
   }
+
+  // if a range was requested but response is not a 206 with content-range header,
+  // range support is incomplete, so remove accept-ranges and content-range from response
+  if (req.headers[HTTP_HEADERS.RANGE]) {
+    if (!res.getHeader(HTTP_HEADERS.CONTENT_RANGE) || (res.status !== 206)) {
+      delete proxyRes.headers[HTTP_HEADERS.ACCEPT_RANGES]
+      delete proxyRes.headers[HTTP_HEADERS.CONTENT_RANGE]
+    }
+  }
 }
 
+/**
+ * @param {string} webResourceId
+ * @param {ServerResponse} res
+ */
 const setCustomResHeaders = (webResourceId, res) => {
   // Set custom x-europeana-web-resource header to URL of web resource
   res.setHeader(HTTP_HEADERS.X_EUROPEANA_WEB_RESOURCE, new URL(webResourceId).toString())
@@ -103,53 +138,55 @@ const handleTimeout = (req, next) => {
   })
 }
 
-const onProxyReq = (webResourceId, next) => (proxyReq, req) => {
-  // redirects already have headers sent, so do not attempt to re-modify
-  if (!proxyReq['_isRedirect']) {
-    // Set custom user-agent header
-    proxyReq.setHeader(HTTP_HEADERS.USER_AGENT, `EuropeanaMediaProxy/${pkg.version} (https://www.europeana.eu)`)
-  }
-
-  try {
-    handleTimeout(proxyReq, next)
-    handleTimeout(req, next)
-  } catch (err) {
-    next(err)
-  }
-}
-
-const onProxyRes = (webResourceId, next) => (proxyRes, req, res) => {
-  try {
-    if (proxyRes.statusCode > 399) {
-      // Upstream error. Normalise to plain-text response.
-      next(httpError(proxyRes.statusCode))
-    } else if (mime.extension(proxyRes.headers[HTTP_HEADERS.CONTENT_TYPE]) === 'html') {
-      // HTML document. Redirect to it.
-      return res.redirect(302, webResourceId)
-    } else {
-      // Proxy everything else.
-      setResContentHeaders(proxyRes, req, res)
-      filterProxyResHeaders(proxyRes)
-    }
-  } catch (err) {
-    next(err)
-  }
-}
-
 export const webResourceProxyOptions = (webResourceId, next) => {
-  const webResourceUrl = new URL(webResourceId)
+  const { origin, pathname, search } = new URL(webResourceId)
+
+  const onProxyReq = (proxyReq, req) => {
+    // redirects already have headers sent, so do not attempt to re-modify
+    if (!proxyReq['_isRedirect']) {
+      // Set custom user-agent header
+      proxyReq.setHeader(HTTP_HEADERS.USER_AGENT, `EuropeanaMediaProxy/${pkg.version} (https://www.europeana.eu)`)
+    }
+
+    try {
+      handleTimeout(proxyReq, next)
+      handleTimeout(req, next)
+    } catch (err) {
+      next(err)
+    }
+  }
+
+  const onProxyRes = (proxyRes, req, res) => {
+    try {
+      if (proxyRes.statusCode > 399) {
+        // Upstream error. Normalise to plain-text response.
+        next(httpError(proxyRes.statusCode))
+      } else if (mime.extension(proxyRes.headers[HTTP_HEADERS.CONTENT_TYPE]) === 'html') {
+        // HTML document. Redirect to it.
+        return res.redirect(302, webResourceId)
+      } else {
+        // Proxy everything else.
+        setResContentHeaders(proxyRes, req, res)
+        filterProxyResHeaders(proxyRes, req, res)
+      }
+    } catch (err) {
+      next(err)
+    }
+  }
+
+  const pathRewrite = () => `${pathname}${search}`
 
   return {
     changeOrigin: true,
     followRedirects: true,
     logLevel: process.NODE_ENV === 'production' ? 'error' : 'info',
     onError: next,
-    onProxyReq: onProxyReq(webResourceId, next),
-    onProxyRes: onProxyRes(webResourceId, next),
-    pathRewrite: () => `${webResourceUrl.pathname}${webResourceUrl.search}`,
+    onProxyReq,
+    onProxyRes,
+    pathRewrite,
     // NOTE: do not use this, as it results in empty responses
     // proxyTimeout: 10000,
-    target: webResourceUrl.origin
+    target: origin
     // NOTE: do not use this, as it results in empty responses
     // timeout: 11000
   }
@@ -157,19 +194,22 @@ export const webResourceProxyOptions = (webResourceId, next) => {
 
 const createWebResourceProxyMiddleware = (createProxyMiddleware) => (req, res, next) => {
   try {
-    if (res.locals.webResourceId) {
-      filterReqHeaders(req)
-
-      // set this early so it is still available on failed request responses,
-      // e.g. timeouts
-      setCustomResHeaders(res.locals.webResourceId, res)
-
-      const options = webResourceProxyOptions(res.locals.webResourceId, next)
-      const proxyMiddleware = (createProxyMiddleware || createHttpProxyMiddleware)(options)
-      proxyMiddleware(req, res, next)
-    } else {
+    const webResource = res.locals.webResource
+    const webResourceId = webResource?.about
+    if (!webResourceId) {
       next()
+      return
     }
+
+    filterReqHeaders(req)
+
+    // set this early so it is still available on failed request responses,
+    // e.g. timeouts
+    setCustomResHeaders(webResourceId, res)
+
+    const options = webResourceProxyOptions(webResourceId, next)
+    const proxyMiddleware = (createProxyMiddleware || createHttpProxyMiddleware)(options)
+    proxyMiddleware(req, res, next)
   } catch (err) {
     next(err)
   }

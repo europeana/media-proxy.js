@@ -54,6 +54,7 @@ describe('@/routes/media.js', () => {
 
   describe('when valid web resource hash is in the request query', () => {
     const webResourceId = 'https://example.org/image.jpeg'
+    const webResource = { edmRights: '/PD/', id: webResourceId }
     const req = {
       params: { datasetId: '123', localId: 'abc', webResourceHash: 'd1299d035beb29c5b3b36e7f7c5c8610' },
       query: { disposition: 'inline' }
@@ -63,14 +64,14 @@ describe('@/routes/media.js', () => {
 
     beforeEach(() => {
       requestedDataSourceStub.returns({
-        find: async () => ({ edmRights: '/PD/', id: webResourceId })
+        find: async () => webResource
       })
     })
 
     it('set web resource ID on res.locals', async () => {
       await mediaRoute({})(req, res, next)
 
-      expect(res.locals.webResourceId).toBe(webResourceId)
+      expect(res.locals.webResource).toEqual(webResource)
     })
 
     it('calls next', async () => {

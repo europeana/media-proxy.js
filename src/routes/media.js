@@ -31,7 +31,7 @@ export default (options) => {
         return res.redirect(302, redirectPath)
       }
 
-      res.locals.webResourceId = webResource.id
+      res.locals.webResource = webResource
       next()
     } catch (err) {
       next(err)
