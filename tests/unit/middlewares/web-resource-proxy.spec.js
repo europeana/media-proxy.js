@@ -24,16 +24,23 @@ const fixtures = {
 
 describe('@/middlewares/web-resource-proxy.js', () => {
   afterEach(sinon.resetHistory)
+  afterAll(sinon.resetBehavior)
+
+  const next = sinon.stub().callsFake((error) => {
+    if (error) {
+      throw error
+    }
+  })
 
   describe('middleware', () => {
     const proxyMiddlewareStub = sinon.stub()
     const createProxyMiddleware = sinon.stub().returns(proxyMiddlewareStub)
-    const next = sinon.spy()
-    const req = { setHeader: sinon.spy() }
+    const req = { headers: {} }
 
     describe('when response locals has webResourceId', () => {
       const res = {
-        locals: { webResourceId: fixtures.webResourceId },
+        getHeader: sinon.spy(),
+        locals: { webResource: { about: fixtures.webResourceId } },
         redirect: sinon.spy(),
         setHeader: sinon.spy()
       }
@@ -55,7 +62,7 @@ describe('@/middlewares/web-resource-proxy.js', () => {
         it('encodes characters not permitted in HTTP header values', () => {
           createWebResourceProxyMiddleware(createProxyMiddleware)(req, {
             ...res,
-            locals: { webResourceId: fixtures.webResourceIdWithCharsToEncode }
+            locals: { webResource: { about: fixtures.webResourceIdWithCharsToEncode } }
           }, next)
 
           expect(res.setHeader.calledWith('x-europeana-web-resource', fixtures.webResourceIdWithCharsEncoded)).toBe(true)
@@ -104,8 +111,8 @@ describe('@/middlewares/web-resource-proxy.js', () => {
     })
 
     describe('onError', () => {
+      const next = sinon.spy()
       it('calls next', () => {
-        const next = sinon.spy()
         const proxyOptions = webResourceProxyOptions(fixtures.webResourceId, next)
         const err = new Error()
 
@@ -164,10 +171,10 @@ describe('@/middlewares/web-resource-proxy.js', () => {
     })
 
     describe('onProxyRes', () => {
-      const next = sinon.stub()
+      const next = sinon.spy()
       const proxyOptions = webResourceProxyOptions(fixtures.webResourceId, next)
       const proxyRes = { headers: {} }
-      const res = { redirect: sinon.spy(), setHeader: sinon.spy() }
+      const res = { getHeader: sinon.spy(), redirect: sinon.spy(), setHeader: sinon.spy() }
       const req = { params: {}, query: {} }
 
       describe('proxy response header filtering', () => {
@@ -218,6 +225,7 @@ describe('@/middlewares/web-resource-proxy.js', () => {
 
       describe('when upstream resource is to be proxied', () => {
         const req = {
+          headers: {},
           params: { datasetId: '123', localId: 'abc', webResourceHash: 'd1299d035beb29c5b3b36e7f7c5c8610' },
           query: {}
         }
