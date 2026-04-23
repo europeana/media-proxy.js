@@ -136,7 +136,6 @@ const webResourceProxyMiddleware = async (req, res, next) => {
 
     // response body may be empty, e.g. in HEAD requests
     if (proxyRes.body) {
-      console.log('sending body')
       Readable.fromWeb(proxyRes.body)
         .pipe(res)
         .on('error', next)
