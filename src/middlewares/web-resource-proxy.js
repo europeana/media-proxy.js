@@ -90,7 +90,7 @@ const filterReqHeaders = (req) => {
  * @param {IncomingMessage} req
  * @param {ServerResponse} res
  */
-const filterProxyResHeaders = (proxyRes, req, res) => {
+const filterProxyResHeaders = (proxyRes, req) => {
   // Delete any response headers we don't want to proxy.
   // They need to be deleted from the proxyRes as otherwise will be
   // copied over to res by http-proxy-middleware later on.
@@ -103,7 +103,7 @@ const filterProxyResHeaders = (proxyRes, req, res) => {
   // if a range was requested but response is not a 206 with content-range header,
   // range support is incomplete, so remove accept-ranges and content-range from response
   if (req.headers[HTTP_HEADERS.RANGE]) {
-    if (!res.getHeader(HTTP_HEADERS.CONTENT_RANGE) || (res.status !== 206)) {
+    if (!proxyRes.headers[HTTP_HEADERS.CONTENT_RANGE] && (proxyRes.statusCode !== 206)) {
       delete proxyRes.headers[HTTP_HEADERS.ACCEPT_RANGES]
       delete proxyRes.headers[HTTP_HEADERS.CONTENT_RANGE]
     }
