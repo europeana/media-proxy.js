@@ -63,7 +63,6 @@ const resFilename = (proxyRes, req) => {
  * @param {ServerResponse} res
  */
 const setResContentHeaders = (proxyRes, req, res) => {
-  const webResource = res.locals?.webResource
   const filename = resFilename(proxyRes, req)
 
   const attachmentOrInline = (req.query.disposition === CONTENT_DISPOSITIONS.INLINE) ?
@@ -72,17 +71,6 @@ const setResContentHeaders = (proxyRes, req, res) => {
 
   res.setHeader(HTTP_HEADERS.CONTENT_DISPOSITION, `${attachmentOrInline}; filename="${filename}"`)
   res.setHeader(HTTP_HEADERS.CONTENT_TYPE, mime.contentType(filename) || CONTENT_TYPES.APPLICATION_OCTET_STREAM)
-
-  // request downstream intermediaries not to alter responses
-  res.setHeader(HTTP_HEADERS.CACHE_CONTROL, 'no-transform')
-
-  // no content-length supplied, so set from EDM if available, but not if
-  // response is compressed
-  if (!res.getHeader(HTTP_HEADERS.CONTENT_LENGTH) && !res.getHeader(HTTP_HEADERS.CONTENT_ENCODING)) {
-    if ((webResource?.ebucoreFileByteSize || 0) > 0) {
-      res.setHeader(HTTP_HEADERS.CONTENT_LENGTH, webResource.ebucoreFileByteSize)
-    }
-  }
 }
 
 /**
