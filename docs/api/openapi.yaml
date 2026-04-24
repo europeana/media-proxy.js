@@ -10,7 +10,7 @@ info:
     url: https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
   contact:
     url: https://github.com/europeana/media-proxy.js
-  version: 0.3.0
+  version: 0.4.0
 externalDocs:
   description: Git repository README
   url: https://github.com/europeana/media-proxy.js#readme
@@ -116,7 +116,7 @@ paths:
               schema:
                 type: string
                 example: OK
-  "/media/{datasetId}/{localId}":
+  /media/{datasetId}/{localId}:
     parameters:
       - $ref: "#/components/parameters/datasetId"
       - $ref: "#/components/parameters/localId"
@@ -136,7 +136,8 @@ paths:
         1. Looks for a web resource associated with the item in its
            `edm:isShownBy`property. If no such web resource is found, responds
            with status code 404.
-        1. Responds with status code 302 to redirect to the endpoint for proxying
+        1. Responds with status code 302 to redirect to the endpoint for
+        proxying
            the media, by appending the MD5 hash of the web resource, i.e.
            `/media/{datasetId}/{localId}/{webResourceHash}`. Any parameters in the
            URL query will be preserved.
@@ -165,7 +166,7 @@ paths:
               schema:
                 type: string
                 example: Not Found
-  "/media/{datasetId}/{localId}/{webResourceHash}":
+  /media/{datasetId}/{localId}/{webResourceHash}:
     parameters:
       - $ref: "#/components/parameters/datasetId"
       - $ref: "#/components/parameters/localId"
@@ -188,7 +189,8 @@ paths:
            `edm:isShownBy` or `edm:hasView` properties, whose URL when MD5-hashed
            matches the path parameter `{webResourceHash}`. If no such web resource
            is found, responds with status code 404.
-        1. Removes all but the following headers from the request before forwarding
+        1. Removes all but the following headers from the request before
+        forwarding
            it to the provider's site:
            * `accept-encoding`
            * `accept-language`
@@ -198,11 +200,14 @@ paths:
            * `range`
            * `referer`
            * `user-agent`
-        1. Starts proxying the web resource from the provider's site to the client.
+        1. Starts proxying the web resource from the provider's site to the
+        client.
 
-        1. If the web resource is detected to be an HTML document, stops proxying
+        1. If the web resource is detected to be an HTML document, stops
+        proxying
            and respond with status code 302 to redirect the client to the web page.
-        1. If the web resource is any other media type, preserve only these upstream
+        1. If the web resource is any other media type, preserve only these
+        upstream
            response headers, and remove the rest:
            * `accept-ranges`
            * `cache-control`
@@ -268,7 +273,7 @@ paths:
               schema:
                 type: string
                 example: Not Found
-  "/{datasetId}/{localId}":
+  /{datasetId}/{localId}:
     parameters:
       - $ref: "#/components/parameters/datasetId"
       - $ref: "#/components/parameters/localId"
