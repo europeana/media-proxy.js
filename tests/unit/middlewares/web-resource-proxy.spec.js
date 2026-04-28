@@ -243,7 +243,7 @@ describe('@/middlewares/web-resource-proxy.js', () => {
             expect(res.setHeader.calledWith('content-type', 'image/png')).toBe(true)
           })
 
-          it('second, is dervied from upstream content-disposition if present', () => {
+          it('second, is derived from upstream content-disposition if present', () => {
             const proxyRes = {
               headers: {
                 'content-disposition': 'attachment; filename="model.obj"',
@@ -254,6 +254,18 @@ describe('@/middlewares/web-resource-proxy.js', () => {
             proxyOptions.onProxyRes(proxyRes, req, res)
 
             expect(res.setHeader.calledWith('content-type', 'model/obj')).toBe(true)
+          })
+
+          it('handles malformed upstream content-disposition', () => {
+            const proxyRes = {
+              headers: {
+                'content-disposition': 'attachment; filename=""model.obj".obj"'
+              }
+            }
+
+            proxyOptions.onProxyRes(proxyRes, req, res)
+
+            expect(res.setHeader.calledWith('content-type', 'application/octet-stream')).toBe(true)
           })
 
           it('last, falls back to "application/octet-stream"', () => {
