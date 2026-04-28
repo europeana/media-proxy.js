@@ -36,25 +36,42 @@ const resFilename = (proxyRes, req) => {
   if (proxyContentType === CONTENT_TYPES.APPLICATION_OCTET_STREAM) {
     proxyContentType = undefined
   }
-  const proxyContentDisposition = proxyRes.headers[HTTP_HEADERS.CONTENT_DISPOSITION]
-  const proxyFilename = proxyContentDisposition ?
-    parseContentDisposition(proxyContentDisposition)?.parameters?.filename :
-    undefined
+  // Get filename extension from:
+  // 1. upstream content-type header
+  let extension =  mime.extension(proxyContentType)
+
+  // 2. upstream content-disposition header filename
+  if (!extension) {
+    const proxyContentDisposition = proxyRes.headers[HTTP_HEADERS.CONTENT_DISPOSITION]
+    const proxyFilename = filenameFromContentDisposition(proxyContentDisposition)
+    extension = mime.extension(mime.contentType(proxyFilename))
+  }
+
+  // 3. falling back to "bin" otherwise
+  if (!extension) {
+    extension = mime.extension(CONTENT_TYPES.APPLICATION_OCTET_STREAM)
+  }
 
   const { datasetId, localId, webResourceHash } = req.params
   const basename = `Europeana.eu-${datasetId}-${localId}-${webResourceHash}`
 
-  // Get filename extension from:
-  // 1. upstream content-type header
-  // 2. upstream content-disposition header filename
-  // 3. falling back to "bin" otherwise
-  const extension = mime.extension(proxyContentType) ||
-    mime.extension(mime.contentType(proxyFilename)) ||
-    mime.extension(CONTENT_TYPES.APPLICATION_OCTET_STREAM)
-
   const filename = `${basename}.${extension}`
 
   return filename
+}
+
+/**
+ * @param {String} contentDisposition
+ */
+const filenameFromContentDisposition = (contentDisposition) => {
+  if (!contentDisposition) {
+    return undefined
+  }
+  try {
+    return parseContentDisposition(contentDisposition)?.parameters?.filename
+  } catch {
+    return undefined
+  }
 }
 
 /**
