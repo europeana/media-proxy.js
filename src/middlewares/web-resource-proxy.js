@@ -30,8 +30,9 @@ const responseHeadersToProxy = [
 /**
  * @param {IncomingMessage} proxyRes
  * @param {IncomingMessage} req
+ * @param {ServerResponse} res
  */
-const resFilename = (proxyRes, req) => {
+const resFilename = (proxyRes, req, res) => {
   let proxyContentType = proxyRes.headers[HTTP_HEADERS.CONTENT_TYPE]
   if (proxyContentType === CONTENT_TYPES.APPLICATION_OCTET_STREAM) {
     proxyContentType = undefined
@@ -47,7 +48,12 @@ const resFilename = (proxyRes, req) => {
     extension = mime.extension(mime.contentType(proxyFilename))
   }
 
-  // 3. falling back to "bin" otherwise
+  // 3. ebucoreHasMimeType property on webResource, from Record API
+  if (!extension) {
+    extension = mime.extension(res.locals?.webResource?.ebucoreHasMimeType)
+  }
+
+  // 4. falling back to "bin" otherwise
   if (!extension) {
     extension = mime.extension(CONTENT_TYPES.APPLICATION_OCTET_STREAM)
   }
@@ -80,7 +86,7 @@ const filenameFromContentDisposition = (contentDisposition) => {
  * @param {ServerResponse} res
  */
 const setResContentHeaders = (proxyRes, req, res) => {
-  const filename = resFilename(proxyRes, req)
+  const filename = resFilename(proxyRes, req, res)
 
   const attachmentOrInline = (req.query.disposition === CONTENT_DISPOSITIONS.INLINE) ?
     CONTENT_DISPOSITIONS.INLINE :
