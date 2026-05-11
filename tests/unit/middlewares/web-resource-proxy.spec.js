@@ -341,6 +341,26 @@ describe('@/middlewares/web-resource-proxy.js', () => {
                 )).toBe(true)
               })
 
+              it('third, is derived from web resource ebucoreHasMimeType property if present', () => {
+                const proxyRes = {
+                  headers: {}
+                }
+
+                proxyOptions.onProxyRes(proxyRes, req, {
+                  ...res,
+                  locals: {
+                    webResource: {
+                      ebucoreHasMimeType: 'model/gltf-binary'
+                    }
+                  }
+                })
+
+                expect(res.setHeader.calledWith(
+                  'content-disposition',
+                  sinon.match((value) => value.endsWith('.glb"'))
+                )).toBe(true)
+              })
+
               it('finally, falls back to ".bin"', () => {
                 const proxyRes = { headers: {} }
 
