@@ -14,7 +14,7 @@ Documentation is available at https://europeana.github.io/media-proxy.js/api/.
 
 ## Requirements
 
-* Node.js 22
+* Node.js 24
 * [Europeana API key](https://www.europeana.eu/account/api-keys)
 
 

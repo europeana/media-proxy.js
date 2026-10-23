@@ -40,7 +40,7 @@
     "yaml": "2.8.2"
   },
   "engines": {
-    "node": "^22"
+    "node": "^24"
   },
   "repository": {
     "type": "git",
