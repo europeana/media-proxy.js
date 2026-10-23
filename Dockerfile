@@ -1,4 +1,4 @@
-FROM node:22-alpine@sha256:8094c002d08262dba12645a3b4a15cd6cd627d30bc782f53229a2ec13ee22a00 AS build
+FROM node:24-alpine@sha256:06d7adf3e0ef61a13f1d28682726366f97a15aa1888c934d3ecec86c33918b53 AS build
 
 WORKDIR /app
 RUN mkdir dist
@@ -14,7 +14,7 @@ COPY src ./src
 RUN npm run build
 
 
-FROM gcr.io/distroless/nodejs22-debian12@sha256:8a3e96fe3345b5d83ecec2066e7c498139a02a6d1214e4f6c39f9ce359f3f5bc
+FROM gcr.io/distroless/nodejs24-debian13@sha256:c23cc7262662efd642cd9c9d61783d10f600321f7bafdd37c8a82365ffaa2aa6
 
 ENV PORT=8080 \
     HOST=0.0.0.0 \
